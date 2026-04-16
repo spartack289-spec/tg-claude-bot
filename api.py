@@ -3,6 +3,7 @@ import hmac
 import hashlib
 import json
 import time
+from contextlib import asynccontextmanager
 from urllib.parse import parse_qs, unquote
 
 import httpx
@@ -27,23 +28,39 @@ ALLOWED_USER_IDS = set(
 MODEL = "claude-sonnet-4-6"
 MAX_HISTORY = 20
 
-claude = anthropic.AsyncAnthropic(
-    api_key=ANTHROPIC_API_KEY,
-    http_client=httpx.AsyncClient(proxy=PROXY_URL) if PROXY_URL else None,
-)
-
-app = FastAPI()
-
 # In-memory history: { (user_id, agent_id): [{role, content}, ...] }
 mini_app_histories: dict[tuple, list] = {}
 
+claude: anthropic.AsyncAnthropic | None = None
 
-@app.on_event("startup")
-async def start_scheduler():
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    global claude
+
+    # Initialize Anthropic client inside the running event loop
+    http_client = httpx.AsyncClient(proxy=PROXY_URL) if PROXY_URL else None
+    claude = anthropic.AsyncAnthropic(
+        api_key=ANTHROPIC_API_KEY,
+        http_client=http_client,
+    )
+
+    # Start scheduler
     scheduler = AsyncIOScheduler(timezone="Europe/Moscow")
     scheduler.add_job(collect_and_save, "cron", hour="8,14,20", minute=0)
     scheduler.start()
     print("[api] Планировщик запущен: дайджест в 8:00, 14:00, 20:00 МСК")
+
+    yield
+
+    # Cleanup
+    scheduler.shutdown(wait=False)
+    if http_client:
+        await http_client.aclose()
+    await claude.close()
+
+
+app = FastAPI(lifespan=lifespan)
 
 
 def verify_init_data(init_data: str) -> dict:
@@ -148,6 +165,10 @@ async def chat(req: ChatRequest):
             messages=history,
         )
         reply = response.content[0].text
+    except anthropic.APIConnectionError as e:
+        raise HTTPException(status_code=503, detail=f"Нет соединения с AI: {e}")
+    except anthropic.APIStatusError as e:
+        raise HTTPException(status_code=502, detail=f"Ошибка AI API: {e.message}")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
