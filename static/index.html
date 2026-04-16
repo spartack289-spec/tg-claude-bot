@@ -1120,28 +1120,49 @@
     // ── Fullscreen ───────────────────────────────────────────────
     const fsBtn = document.getElementById('fullscreen-btn');
 
-    function updateFsIcon() {
-      const active = !!(document.fullscreenElement || document.webkitFullscreenElement);
-      fsBtn.textContent = active ? '✕' : '⛶';
-      fsBtn.title = active ? 'Выйти из полного экрана' : 'Полный экран';
+    function isFull() {
+      return tg.isFullscreen ||
+        !!(document.fullscreenElement || document.webkitFullscreenElement);
     }
 
+    function updateFsIcon() {
+      fsBtn.innerHTML = isFull() ? ICON_EXIT : ICON_ENTER;
+      fsBtn.title = isFull() ? 'Выйти из полного экрана' : 'Полный экран';
+    }
+
+    const ICON_ENTER = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+      <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+    </svg>`;
+
+    const ICON_EXIT = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/>
+      <line x1="10" y1="14" x2="3" y2="21"/><line x1="21" y1="3" x2="14" y2="10"/>
+    </svg>`;
+
+    fsBtn.innerHTML = ICON_ENTER;
+
     fsBtn.addEventListener('click', () => {
-      if (!document.fullscreenElement && !document.webkitFullscreenElement) {
-        (document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen)
-          .call(document.documentElement);
+      if (isFull()) {
+        // exit
+        if (typeof tg.exitFullscreen === 'function') tg.exitFullscreen();
+        else if (document.exitFullscreen) document.exitFullscreen();
+        else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
       } else {
-        (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+        // enter
+        if (typeof tg.requestFullscreen === 'function') tg.requestFullscreen();
+        else if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen();
+        else if (document.documentElement.webkitRequestFullscreen) document.documentElement.webkitRequestFullscreen();
       }
     });
 
+    // Telegram fullscreen event
+    tg.onEvent('fullscreenChanged', updateFsIcon);
+    tg.onEvent('fullscreenFailed', () => { fsBtn.style.display = 'none'; });
+
+    // Native fullscreen events (fallback)
     document.addEventListener('fullscreenchange', updateFsIcon);
     document.addEventListener('webkitfullscreenchange', updateFsIcon);
-
-    // Hide button if fullscreen API not supported (e.g. inside TG mobile)
-    if (!document.documentElement.requestFullscreen && !document.documentElement.webkitRequestFullscreen) {
-      fsBtn.style.display = 'none';
-    }
 
     loadAgents();
   </script>
