@@ -3,120 +3,458 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-  <title>AI Агенты</title>
+  <title>AI Офис</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-    body {
-      background: var(--tg-theme-bg-color, #ffffff);
-      color: var(--tg-theme-text-color, #000000);
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      min-height: 100vh;
+    :root {
+      --bg: #0b0b1e;
+      --surface: rgba(255,255,255,0.06);
+      --surface-hover: rgba(255,255,255,0.12);
+      --border: rgba(255,255,255,0.10);
+      --text: #e4e4f7;
+      --hint: #7b7b9e;
+      --accent: #7c6fff;
+      --desk: #1a1a36;
+      --desk-top: #222240;
     }
 
-    /* ── Agents screen ── */
-    #agents-screen { padding: 16px; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
 
-    .screen-title {
+    /* ── Background grid ── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(124,111,255,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(124,111,255,0.04) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ── Ambient glows ── */
+    body::after {
+      content: '';
+      position: fixed;
+      top: -20%;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 600px;
+      height: 400px;
+      background: radial-gradient(ellipse, rgba(124,111,255,0.12) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ════════════════════════════════════
+       AGENTS SCREEN
+    ════════════════════════════════════ */
+    #agents-screen {
+      position: relative;
+      z-index: 1;
+      padding: 20px 16px 32px;
+    }
+
+    .office-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 24px;
+    }
+
+    .office-logo {
+      width: 36px; height: 36px;
+      background: linear-gradient(135deg, #7c6fff, #a78bfa);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+
+    .office-title {
       font-size: 20px;
       font-weight: 700;
-      margin-bottom: 16px;
-      color: var(--tg-theme-text-color, #000);
+      background: linear-gradient(90deg, #e4e4f7, #a78bfa);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .office-subtitle {
+      font-size: 12px;
+      color: var(--hint);
+      margin-top: 2px;
     }
 
     #agents-grid {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
-      gap: 12px;
+      gap: 14px;
     }
 
-    .agent-card {
-      background: var(--tg-theme-secondary-bg-color, #f1f1f1);
-      border-radius: 14px;
-      padding: 16px 14px;
+    /* ── Workstation card ── */
+    .workstation {
       cursor: pointer;
-      transition: opacity 0.15s, transform 0.1s;
+      border-radius: 18px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      overflow: hidden;
+      transition: transform 0.2s, background 0.2s, box-shadow 0.2s;
       -webkit-tap-highlight-color: transparent;
+      position: relative;
     }
 
-    .agent-card:active { opacity: 0.6; transform: scale(0.97); }
+    .workstation:active {
+      transform: scale(0.95);
+      background: var(--surface-hover);
+    }
 
-    .agent-emoji { font-size: 34px; line-height: 1; }
+    .workstation:hover {
+      box-shadow: 0 0 24px rgba(124,111,255,0.2);
+      background: var(--surface-hover);
+    }
+
+    /* Screen glow accent (top border) */
+    .workstation::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: var(--screen-color, #7c6fff);
+      opacity: 0.8;
+    }
+
+    /* ── Monitor ── */
+    .monitor-wrap {
+      padding: 14px 14px 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0;
+    }
+
+    .monitor {
+      width: 100%;
+      background: #0d0d20;
+      border: 1.5px solid rgba(255,255,255,0.12);
+      border-radius: 8px 8px 4px 4px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .monitor-bar {
+      background: rgba(255,255,255,0.06);
+      padding: 5px 8px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+
+    .dot-r { width: 6px; height: 6px; border-radius: 50%; background: #ff5f57; }
+    .dot-y { width: 6px; height: 6px; border-radius: 50%; background: #febc2e; }
+    .dot-g { width: 6px; height: 6px; border-radius: 50%; background: #28c840; }
+
+    .screen-content {
+      height: 52px;
+      padding: 6px 8px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .screen-line {
+      height: 4px;
+      border-radius: 2px;
+      background: var(--screen-color, #7c6fff);
+      margin-bottom: 5px;
+      opacity: 0.7;
+      transform-origin: left;
+      animation: scanline 2.5s ease-in-out infinite;
+    }
+    .screen-line:nth-child(2) { width: 65%; animation-delay: 0.3s; }
+    .screen-line:nth-child(3) { width: 80%; animation-delay: 0.6s; }
+    .screen-line:nth-child(4) { width: 50%; animation-delay: 0.9s; }
+
+    @keyframes scanline {
+      0%, 100% { opacity: 0.3; transform: scaleX(0.8); }
+      50% { opacity: 0.9; transform: scaleX(1); }
+    }
+
+    /* Blinking cursor */
+    .screen-cursor {
+      display: inline-block;
+      width: 7px; height: 10px;
+      background: var(--screen-color, #7c6fff);
+      animation: blink 1s step-end infinite;
+      vertical-align: middle;
+      border-radius: 1px;
+    }
+
+    @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+
+    /* Screen glow */
+    .monitor::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse at 50% 50%, var(--screen-color, #7c6fff) 0%, transparent 70%);
+      opacity: 0.08;
+      pointer-events: none;
+      animation: screen-pulse 3s ease-in-out infinite;
+    }
+
+    @keyframes screen-pulse {
+      0%, 100% { opacity: 0.05; }
+      50% { opacity: 0.15; }
+    }
+
+    /* ── Monitor stand ── */
+    .monitor-stand {
+      width: 10px;
+      height: 8px;
+      background: rgba(255,255,255,0.1);
+      margin: 0 auto;
+    }
+
+    .monitor-base {
+      width: 36px;
+      height: 4px;
+      background: rgba(255,255,255,0.08);
+      border-radius: 2px;
+      margin: 0 auto;
+    }
+
+    /* ── Avatar ── */
+    .agent-avatar-wrap {
+      display: flex;
+      justify-content: center;
+      margin-top: 4px;
+      animation: float 3.5s ease-in-out infinite;
+    }
+
+    .workstation:nth-child(2) .agent-avatar-wrap { animation-delay: 0.5s; }
+    .workstation:nth-child(3) .agent-avatar-wrap { animation-delay: 1.0s; }
+    .workstation:nth-child(4) .agent-avatar-wrap { animation-delay: 1.5s; }
+    .workstation:nth-child(5) .agent-avatar-wrap { animation-delay: 0.8s; }
+    .workstation:nth-child(6) .agent-avatar-wrap { animation-delay: 1.3s; }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-4px); }
+    }
+
+    .agent-avatar {
+      width: 48px; height: 48px;
+      border-radius: 50%;
+      overflow: hidden;
+      background: rgba(255,255,255,0.06);
+      border: 2px solid var(--screen-color, #7c6fff);
+      box-shadow: 0 0 12px var(--screen-color, #7c6fff), 0 0 0 3px rgba(124,111,255,0.1);
+      transition: box-shadow 0.2s;
+      flex-shrink: 0;
+    }
+
+    .agent-avatar img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    /* ── Desk & label ── */
+    .desk-surface {
+      height: 6px;
+      background: linear-gradient(90deg, var(--desk), var(--desk-top), var(--desk));
+      margin: 6px 8px 0;
+      border-radius: 3px;
+    }
+
+    .agent-info {
+      padding: 8px 12px 12px;
+      text-align: center;
+    }
 
     .agent-name {
-      font-size: 14px;
+      font-size: 13px;
       font-weight: 600;
-      margin: 10px 0 4px;
-      color: var(--tg-theme-text-color, #000);
+      color: var(--text);
+      display: block;
     }
 
     .agent-desc {
-      font-size: 12px;
-      line-height: 1.4;
-      color: var(--tg-theme-hint-color, #999);
+      font-size: 11px;
+      color: var(--hint);
+      margin-top: 2px;
+      display: block;
+      line-height: 1.3;
     }
 
-    /* ── Chat screen ── */
+    /* ── Online indicator ── */
+    .online-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 10px;
+      color: #28c840;
+      margin-top: 4px;
+    }
+
+    .online-dot {
+      width: 5px; height: 5px;
+      border-radius: 50%;
+      background: #28c840;
+      animation: pulse-green 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse-green {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(40,200,64,0.4); }
+      50% { box-shadow: 0 0 0 4px rgba(40,200,64,0); }
+    }
+
+    /* ── Loading ── */
+    .loading-wrap {
+      grid-column: 1 / -1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 60px 20px;
+      gap: 12px;
+      color: var(--hint);
+      font-size: 14px;
+    }
+
+    .loader {
+      width: 32px; height: 32px;
+      border: 2px solid rgba(124,111,255,0.2);
+      border-top-color: #7c6fff;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ════════════════════════════════════
+       CHAT SCREEN
+    ════════════════════════════════════ */
     #chat-screen {
       display: none;
       flex-direction: column;
       height: 100vh;
+      background: var(--bg);
+      position: relative;
+      z-index: 1;
     }
 
-    /* ── News screen ── */
+    /* ════════════════════════════════════
+       NEWS SCREEN
+    ════════════════════════════════════ */
     #news-screen {
       display: none;
       flex-direction: column;
       height: 100vh;
+      background: var(--bg);
+      position: relative;
+      z-index: 1;
     }
 
     /* ── Shared header ── */
     .screen-header {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 12px;
       padding: 12px 16px;
-      background: var(--tg-theme-secondary-bg-color, #f1f1f1);
-      border-bottom: 1px solid rgba(0,0,0,0.08);
+      background: rgba(11,11,30,0.95);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
       position: sticky;
       top: 0;
       z-index: 10;
     }
 
     .back-btn {
-      background: none;
-      border: none;
-      font-size: 22px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      width: 34px; height: 34px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       cursor: pointer;
-      color: var(--tg-theme-link-color, #2481cc);
-      padding: 0 4px;
+      color: var(--accent);
+      font-size: 20px;
       line-height: 1;
+      transition: background 0.15s;
+      flex-shrink: 0;
     }
 
-    .header-title {
-      font-size: 16px;
-      font-weight: 600;
+    .back-btn:active { background: var(--surface-hover); }
+
+    .header-agent-info {
+      display: flex;
+      align-items: center;
+      gap: 10px;
       flex: 1;
+      min-width: 0;
+    }
+
+    .header-avatar {
+      width: 34px; height: 34px;
+      border-radius: 50%;
+      overflow: hidden;
+      flex-shrink: 0;
+      border: 1.5px solid var(--accent);
+    }
+
+    .header-avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+    .header-name {
+      font-size: 15px;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .header-status {
+      font-size: 11px;
+      color: #28c840;
+      display: flex;
+      align-items: center;
+      gap: 4px;
     }
 
     .header-action-btn {
-      background: none;
-      border: none;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 6px 12px;
+      color: var(--hint);
       font-size: 12px;
       cursor: pointer;
-      color: var(--tg-theme-hint-color, #999);
-      padding: 4px 8px;
+      white-space: nowrap;
+      transition: background 0.15s;
     }
 
-    /* ── Chat ── */
+    .header-action-btn:active { background: var(--surface-hover); }
+
+    /* ── Chat messages ── */
     #messages {
       flex: 1;
       overflow-y: auto;
-      padding: 12px 16px;
+      padding: 16px;
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: 10px;
     }
 
     .message { display: flex; }
@@ -128,207 +466,272 @@
       padding: 10px 14px;
       border-radius: 18px;
       font-size: 14px;
-      line-height: 1.5;
+      line-height: 1.55;
       word-break: break-word;
       white-space: pre-wrap;
     }
 
     .message.user .bubble {
-      background: var(--tg-theme-button-color, #2481cc);
-      color: var(--tg-theme-button-text-color, #fff);
+      background: linear-gradient(135deg, #7c6fff, #a78bfa);
+      color: #fff;
       border-bottom-right-radius: 4px;
     }
 
     .message.assistant .bubble {
-      background: var(--tg-theme-secondary-bg-color, #f1f1f1);
-      color: var(--tg-theme-text-color, #000);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text);
       border-bottom-left-radius: 4px;
     }
 
-    .dot {
+    .typing-dots {
+      display: flex;
+      gap: 4px;
+      align-items: center;
+      padding: 14px 16px;
+    }
+
+    .tdot {
       width: 7px; height: 7px;
       border-radius: 50%;
-      background: var(--tg-theme-hint-color, #999);
-      animation: bounce 1.2s infinite;
+      background: var(--hint);
+      animation: bounce-dot 1.2s infinite;
     }
-    .dot:nth-child(2) { animation-delay: 0.2s; }
-    .dot:nth-child(3) { animation-delay: 0.4s; }
+    .tdot:nth-child(2) { animation-delay: 0.2s; }
+    .tdot:nth-child(3) { animation-delay: 0.4s; }
 
-    @keyframes bounce {
-      0%, 80%, 100% { transform: scale(0.7); opacity: 0.5; }
+    @keyframes bounce-dot {
+      0%, 80%, 100% { transform: scale(0.7); opacity: 0.4; }
       40% { transform: scale(1); opacity: 1; }
     }
 
+    /* ── Input area ── */
     #input-area {
       display: flex;
       align-items: flex-end;
-      gap: 8px;
-      padding: 10px 12px;
-      background: var(--tg-theme-bg-color, #fff);
-      border-top: 1px solid rgba(0,0,0,0.08);
+      gap: 10px;
+      padding: 10px 14px;
+      background: rgba(11,11,30,0.95);
+      backdrop-filter: blur(12px);
+      border-top: 1px solid var(--border);
     }
 
     #msg-input {
       flex: 1;
-      background: var(--tg-theme-secondary-bg-color, #f1f1f1);
-      color: var(--tg-theme-text-color, #000);
-      border: none;
+      background: var(--surface);
+      color: var(--text);
+      border: 1px solid var(--border);
       outline: none;
-      border-radius: 20px;
+      border-radius: 16px;
       padding: 10px 16px;
       font-size: 14px;
       font-family: inherit;
       resize: none;
       max-height: 120px;
       line-height: 1.4;
+      transition: border-color 0.2s;
     }
 
-    #msg-input::placeholder { color: var(--tg-theme-hint-color, #999); }
+    #msg-input:focus { border-color: var(--accent); }
+    #msg-input::placeholder { color: var(--hint); }
 
     #send-btn {
       width: 40px; height: 40px;
       border-radius: 50%;
-      background: var(--tg-theme-button-color, #2481cc);
-      color: var(--tg-theme-button-text-color, #fff);
+      background: linear-gradient(135deg, #7c6fff, #a78bfa);
+      color: #fff;
       border: none;
       cursor: pointer;
-      font-size: 18px;
+      font-size: 16px;
       display: flex;
       align-items: center;
       justify-content: center;
       flex-shrink: 0;
-      transition: opacity 0.15s;
+      transition: opacity 0.15s, transform 0.1s;
+      box-shadow: 0 4px 12px rgba(124,111,255,0.4);
     }
 
-    #send-btn:disabled { opacity: 0.4; cursor: default; }
+    #send-btn:disabled { opacity: 0.3; cursor: default; transform: none; }
+    #send-btn:active { transform: scale(0.93); }
 
-    /* ── News feed ── */
+    /* ════════════════════════════════════
+       NEWS FEED
+    ════════════════════════════════════ */
     #news-feed {
       flex: 1;
       overflow-y: auto;
-      padding: 12px 16px;
+      padding: 16px;
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: 14px;
     }
 
     .digest-card {
-      background: var(--tg-theme-secondary-bg-color, #f1f1f1);
-      border-radius: 14px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
       padding: 16px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .digest-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, #00b4ff, #7c6fff);
     }
 
     .digest-title {
-      font-size: 15px;
+      font-size: 14px;
       font-weight: 700;
-      margin-bottom: 4px;
+      color: var(--text);
     }
 
     .digest-time {
-      font-size: 12px;
-      color: var(--tg-theme-hint-color, #999);
+      font-size: 11px;
+      color: var(--hint);
+      margin-top: 3px;
       margin-bottom: 12px;
     }
 
     .digest-content {
-      font-size: 14px;
-      line-height: 1.6;
+      font-size: 13px;
+      line-height: 1.65;
+      color: #c4c4e0;
       white-space: pre-wrap;
       word-break: break-word;
     }
 
     .digest-links-toggle {
       margin-top: 12px;
-      background: none;
-      border: none;
-      color: var(--tg-theme-link-color, #2481cc);
-      font-size: 13px;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: rgba(0,180,255,0.08);
+      border: 1px solid rgba(0,180,255,0.2);
+      border-radius: 8px;
+      padding: 5px 12px;
+      color: #00b4ff;
+      font-size: 12px;
       cursor: pointer;
-      padding: 0;
+      transition: background 0.15s;
     }
 
+    .digest-links-toggle:active { background: rgba(0,180,255,0.15); }
+
     .digest-links {
-      display: none;
-      margin-top: 8px;
+      margin-top: 10px;
       display: flex;
       flex-direction: column;
-      gap: 4px;
+      gap: 6px;
     }
 
     .digest-links.hidden { display: none; }
 
     .digest-link {
       font-size: 12px;
-      color: var(--tg-theme-link-color, #2481cc);
+      color: #7c6fff;
       text-decoration: none;
-      white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+      white-space: nowrap;
+      display: block;
+      padding: 4px 8px;
+      background: rgba(124,111,255,0.06);
+      border-radius: 6px;
+      border: 1px solid rgba(124,111,255,0.15);
     }
+
+    .digest-link:active { background: rgba(124,111,255,0.15); }
 
     .news-empty {
       text-align: center;
-      padding: 40px 20px;
-      color: var(--tg-theme-hint-color, #999);
+      padding: 48px 20px;
+      color: var(--hint);
       font-size: 14px;
-      line-height: 1.6;
+      line-height: 1.7;
     }
+
+    .news-empty-icon { font-size: 48px; margin-bottom: 12px; }
 
     .refresh-btn {
-      background: var(--tg-theme-button-color, #2481cc);
-      color: var(--tg-theme-button-text-color, #fff);
+      background: linear-gradient(135deg, #7c6fff, #a78bfa);
+      color: #fff;
       border: none;
-      border-radius: 20px;
-      padding: 10px 20px;
+      border-radius: 14px;
+      padding: 12px 24px;
       font-size: 14px;
+      font-weight: 600;
       cursor: pointer;
-      margin-top: 12px;
+      margin-top: 16px;
+      transition: opacity 0.15s;
+      box-shadow: 0 4px 12px rgba(124,111,255,0.3);
     }
 
-    .refresh-btn:disabled { opacity: 0.5; cursor: default; }
+    .refresh-btn:disabled { opacity: 0.4; cursor: default; }
 
-    #loading {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 120px;
-      color: var(--tg-theme-hint-color, #999);
-      font-size: 14px;
-    }
-
-    .spinning { animation: spin 1s linear infinite; display: inline-block; }
-    @keyframes spin { to { transform: rotate(360deg); } }
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 3px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(124,111,255,0.3); border-radius: 2px; }
   </style>
 </head>
 <body>
 
-  <!-- Agents list screen -->
+  <!-- ══ Agents screen ══ -->
   <div id="agents-screen">
-    <p class="screen-title">AI Агенты</p>
+    <div class="office-header">
+      <div class="office-logo">🤖</div>
+      <div>
+        <div class="office-title">AI Офис</div>
+        <div class="office-subtitle">Выберите агента</div>
+      </div>
+    </div>
     <div id="agents-grid">
-      <div id="loading">Загрузка...</div>
+      <div class="loading-wrap">
+        <div class="loader"></div>
+        <span>Открываем офис...</span>
+      </div>
     </div>
   </div>
 
-  <!-- Chat screen -->
+  <!-- ══ Chat screen ══ -->
   <div id="chat-screen">
     <div class="screen-header">
-      <button class="back-btn" id="chat-back-btn" aria-label="Назад">‹</button>
-      <span class="header-title" id="agent-title"></span>
+      <button class="back-btn" id="chat-back-btn">‹</button>
+      <div class="header-agent-info">
+        <div class="header-avatar" id="chat-header-avatar">
+          <img id="chat-avatar-img" src="" alt="">
+        </div>
+        <div>
+          <div class="header-name" id="agent-title"></div>
+          <div class="header-status"><span class="online-dot" style="width:5px;height:5px;border-radius:50%;background:#28c840;display:inline-block"></span> онлайн</div>
+        </div>
+      </div>
       <button class="header-action-btn" id="clear-btn">Очистить</button>
     </div>
     <div id="messages"></div>
     <div id="input-area">
-      <textarea id="msg-input" rows="1" placeholder="Сообщение..."></textarea>
-      <button id="send-btn" aria-label="Отправить">➤</button>
+      <textarea id="msg-input" rows="1" placeholder="Напишите сообщение..."></textarea>
+      <button id="send-btn">➤</button>
     </div>
   </div>
 
-  <!-- News feed screen -->
+  <!-- ══ News screen ══ -->
   <div id="news-screen">
     <div class="screen-header">
-      <button class="back-btn" id="news-back-btn" aria-label="Назад">‹</button>
-      <span class="header-title" id="news-title"></span>
+      <button class="back-btn" id="news-back-btn">‹</button>
+      <div class="header-agent-info">
+        <div class="header-avatar" id="news-header-avatar">
+          <img id="news-avatar-img" src="" alt="">
+        </div>
+        <div>
+          <div class="header-name" id="news-title"></div>
+          <div class="header-status"><span class="online-dot" style="width:5px;height:5px;border-radius:50%;background:#28c840;display:inline-block"></span> обновляется 3×/день</div>
+        </div>
+      </div>
       <button class="header-action-btn" id="news-refresh-btn">↻</button>
     </div>
     <div id="news-feed"></div>
@@ -343,6 +746,32 @@
     let currentAgent = null;
     const chatHistories = {};
 
+    // Screen colors per agent id
+    const SCREEN_COLORS = {
+      news:       '#00b4ff',
+      code:       '#00ff88',
+      copywriter: '#ff6b9d',
+      analyst:    '#ffb300',
+      translator: '#00e5ff',
+      creative:   '#ff4081',
+      general:    '#7c6fff',
+    };
+
+    // DiceBear robot avatars
+    function avatarUrl(agentId) {
+      const colors = {
+        news:       'b6e3f4',
+        code:       'c0aede',
+        copywriter: 'ffd5dc',
+        analyst:    'ffe4b5',
+        translator: 'b5ead7',
+        creative:   'ffb7b2',
+        general:    'd4d4f5',
+      };
+      const bg = colors[agentId] || 'd4d4f5';
+      return `https://api.dicebear.com/9.x/bottts/svg?seed=${agentId}&backgroundColor=${bg}&radius=50`;
+    }
+
     // ── Load agents ──────────────────────────────────────────────
     async function loadAgents() {
       try {
@@ -352,38 +781,66 @@
         const grid = document.getElementById('agents-grid');
         grid.innerHTML = '';
         if (agents.length === 0) {
-          grid.innerHTML = '<div id="loading">Агенты ещё не добавлены</div>';
+          grid.innerHTML = `<div class="loading-wrap"><span style="font-size:32px">🏗️</span><span>Агенты скоро появятся</span></div>`;
           return;
         }
         agents.forEach(agent => {
+          const color = SCREEN_COLORS[agent.id] || '#7c6fff';
+          const avatar = avatarUrl(agent.id);
           const card = document.createElement('div');
-          card.className = 'agent-card';
+          card.className = 'workstation';
+          card.style.setProperty('--screen-color', color);
           card.innerHTML = `
-            <div class="agent-emoji">${agent.emoji}</div>
-            <div class="agent-name">${escHtml(agent.name)}</div>
-            <div class="agent-desc">${escHtml(agent.description)}</div>
+            <div class="monitor-wrap">
+              <div class="monitor">
+                <div class="monitor-bar">
+                  <span class="dot-r"></span>
+                  <span class="dot-y"></span>
+                  <span class="dot-g"></span>
+                </div>
+                <div class="screen-content">
+                  <div class="screen-line" style="width:90%"></div>
+                  <div class="screen-line" style="width:65%"></div>
+                  <div class="screen-line" style="width:80%"></div>
+                  <div style="margin-top:2px"><span class="screen-cursor"></span></div>
+                </div>
+              </div>
+              <div class="monitor-stand"></div>
+              <div class="monitor-base"></div>
+            </div>
+            <div class="agent-avatar-wrap">
+              <div class="agent-avatar">
+                <img src="${avatar}" alt="${agent.name}" loading="lazy">
+              </div>
+            </div>
+            <div class="desk-surface"></div>
+            <div class="agent-info">
+              <span class="agent-name">${escHtml(agent.name)}</span>
+              <span class="agent-desc">${escHtml(agent.description)}</span>
+              <div class="online-badge">
+                <span class="online-dot"></span> онлайн
+              </div>
+            </div>
           `;
           card.addEventListener('click', () => {
-            if (agent.type === 'news') {
-              openNews(agent);
-            } else {
-              openChat(agent);
-            }
+            if (agent.type === 'news') openNews(agent, avatar);
+            else openChat(agent, avatar);
           });
           grid.appendChild(card);
         });
       } catch (e) {
         document.getElementById('agents-grid').innerHTML =
-          `<div id="loading">Ошибка: ${escHtml(e.message)}</div>`;
+          `<div class="loading-wrap"><span>⚠️ ${escHtml(e.message)}</span></div>`;
       }
     }
 
-    // ── Chat navigation ──────────────────────────────────────────
-    function openChat(agent) {
+    // ── Chat ─────────────────────────────────────────────────────
+    function openChat(agent, avatar) {
       currentAgent = agent;
       document.getElementById('agents-screen').style.display = 'none';
       document.getElementById('chat-screen').style.display = 'flex';
-      document.getElementById('agent-title').textContent = `${agent.emoji} ${agent.name}`;
+      document.getElementById('agent-title').textContent = agent.name;
+      document.getElementById('chat-avatar-img').src = avatar || avatarUrl(agent.id);
       renderMessages(agent.id);
       tg.BackButton.show();
       tg.BackButton.onClick(closeChat);
@@ -398,12 +855,75 @@
       currentAgent = null;
     }
 
-    // ── News navigation ──────────────────────────────────────────
-    function openNews(agent) {
+    async function sendMessage() {
+      const input = document.getElementById('msg-input');
+      const text = input.value.trim();
+      if (!text || !currentAgent) return;
+      const agentId = currentAgent.id;
+      input.value = '';
+      autoResize(input);
+      if (!chatHistories[agentId]) chatHistories[agentId] = [];
+      chatHistories[agentId].push({ role: 'user', content: text });
+      renderMessages(agentId);
+      const sendBtn = document.getElementById('send-btn');
+      sendBtn.disabled = true;
+      showTyping();
+      try {
+        const res = await fetch(`${BASE_URL}/api/chat`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ agent_id: agentId, message: text, telegram_init_data: tg.initData }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || 'Ошибка сервера');
+        chatHistories[agentId].push({ role: 'assistant', content: data.reply });
+      } catch (err) {
+        chatHistories[agentId].push({ role: 'assistant', content: `⚠️ ${err.message}` });
+      } finally {
+        sendBtn.disabled = false;
+        renderMessages(agentId);
+      }
+    }
+
+    function renderMessages(agentId) {
+      const container = document.getElementById('messages');
+      const msgs = chatHistories[agentId] || [];
+      container.innerHTML = msgs.map(m => `
+        <div class="message ${m.role}">
+          <div class="bubble">${escHtml(m.content)}</div>
+        </div>`).join('');
+      container.scrollTop = container.scrollHeight;
+    }
+
+    function showTyping() {
+      const container = document.getElementById('messages');
+      const el = document.createElement('div');
+      el.className = 'message assistant';
+      el.id = 'typing-indicator';
+      el.innerHTML = `<div class="bubble"><div class="typing-dots"><span class="tdot"></span><span class="tdot"></span><span class="tdot"></span></div></div>`;
+      container.appendChild(el);
+      container.scrollTop = container.scrollHeight;
+    }
+
+    async function clearHistory() {
+      if (!currentAgent) return;
+      chatHistories[currentAgent.id] = [];
+      renderMessages(currentAgent.id);
+      try {
+        await fetch(`${BASE_URL}/api/chat/${currentAgent.id}/history`, {
+          method: 'DELETE',
+          headers: { 'X-Telegram-Init-Data': tg.initData },
+        });
+      } catch (_) {}
+    }
+
+    // ── News ─────────────────────────────────────────────────────
+    function openNews(agent, avatar) {
       currentAgent = agent;
       document.getElementById('agents-screen').style.display = 'none';
       document.getElementById('news-screen').style.display = 'flex';
-      document.getElementById('news-title').textContent = `${agent.emoji} ${agent.name}`;
+      document.getElementById('news-title').textContent = agent.name;
+      document.getElementById('news-avatar-img').src = avatar || avatarUrl(agent.id);
       loadNews();
       tg.BackButton.show();
       tg.BackButton.onClick(closeNews);
@@ -419,13 +939,13 @@
 
     async function loadNews() {
       const feed = document.getElementById('news-feed');
-      feed.innerHTML = '<div id="loading">Загрузка дайджестов...</div>';
+      feed.innerHTML = `<div class="loading-wrap"><div class="loader"></div><span>Загрузка дайджестов...</span></div>`;
       try {
         const res = await fetch(`${BASE_URL}/api/news`);
         const digests = await res.json();
         renderDigests(digests);
       } catch (e) {
-        feed.innerHTML = `<div class="news-empty">Ошибка загрузки: ${escHtml(e.message)}</div>`;
+        feed.innerHTML = `<div class="news-empty"><div class="news-empty-icon">⚠️</div>Ошибка: ${escHtml(e.message)}</div>`;
       }
     }
 
@@ -434,14 +954,14 @@
       if (!digests || digests.length === 0) {
         feed.innerHTML = `
           <div class="news-empty">
+            <div class="news-empty-icon">📭</div>
             Дайджестов пока нет.<br>
-            Первый выйдет в 8:00, 14:00 или 20:00 МСК.<br><br>
-            <button class="refresh-btn" id="manual-refresh-btn">Собрать сейчас</button>
+            Первый выйдет в 8:00, 14:00 или 20:00 МСК.<br>
+            <button class="refresh-btn" id="manual-refresh-btn">⚡ Собрать сейчас</button>
           </div>`;
         document.getElementById('manual-refresh-btn')?.addEventListener('click', triggerRefresh);
         return;
       }
-
       feed.innerHTML = digests.map((d, i) => `
         <div class="digest-card">
           <div class="digest-title">${escHtml(d.title)}</div>
@@ -449,19 +969,17 @@
           <div class="digest-content">${escHtml(d.content)}</div>
           ${d.links && d.links.length > 0 ? `
             <button class="digest-links-toggle" onclick="toggleLinks(${i})">
-              Источники (${d.links.length}) ↗
+              🔗 Источники (${d.links.length})
             </button>
             <div class="digest-links hidden" id="links-${i}">
-              ${d.links.map(l => `<a class="digest-link" href="${escHtml(l.url)}" target="_blank">${escHtml(l.title)}</a>`).join('')}
+              ${d.links.map(l => `<a class="digest-link" href="${escHtml(l.url)}" target="_blank">↗ ${escHtml(l.title)}</a>`).join('')}
             </div>
           ` : ''}
-        </div>
-      `).join('');
+        </div>`).join('');
     }
 
     function toggleLinks(i) {
-      const el = document.getElementById(`links-${i}`);
-      if (el) el.classList.toggle('hidden');
+      document.getElementById(`links-${i}`)?.classList.toggle('hidden');
     }
 
     async function triggerRefresh() {
@@ -484,93 +1002,13 @@
 
     function formatDate(iso) {
       try {
-        const d = new Date(iso);
-        return d.toLocaleString('ru-RU', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' });
+        return new Date(iso).toLocaleString('ru-RU', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' });
       } catch { return iso; }
     }
 
-    // ── Chat send ────────────────────────────────────────────────
-    async function sendMessage() {
-      const input = document.getElementById('msg-input');
-      const text = input.value.trim();
-      if (!text || !currentAgent) return;
-
-      const agentId = currentAgent.id;
-      input.value = '';
-      autoResize(input);
-
-      if (!chatHistories[agentId]) chatHistories[agentId] = [];
-      chatHistories[agentId].push({ role: 'user', content: text });
-      renderMessages(agentId);
-
-      const sendBtn = document.getElementById('send-btn');
-      sendBtn.disabled = true;
-      showTyping();
-
-      try {
-        const res = await fetch(`${BASE_URL}/api/chat`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            agent_id: agentId,
-            message: text,
-            telegram_init_data: tg.initData,
-          }),
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.detail || 'Ошибка сервера');
-        chatHistories[agentId].push({ role: 'assistant', content: data.reply });
-      } catch (err) {
-        chatHistories[agentId].push({ role: 'assistant', content: `⚠️ ${err.message}` });
-      } finally {
-        sendBtn.disabled = false;
-        renderMessages(agentId);
-      }
-    }
-
-    function renderMessages(agentId) {
-      const container = document.getElementById('messages');
-      const msgs = chatHistories[agentId] || [];
-      container.innerHTML = msgs.map(m => `
-        <div class="message ${m.role}">
-          <div class="bubble">${escHtml(m.content)}</div>
-        </div>
-      `).join('');
-      container.scrollTop = container.scrollHeight;
-    }
-
-    function showTyping() {
-      const container = document.getElementById('messages');
-      const el = document.createElement('div');
-      el.className = 'message assistant';
-      el.id = 'typing-indicator';
-      el.innerHTML = `<div class="bubble" style="display:flex;gap:4px;align-items:center;padding:12px 16px">
-        <span class="dot"></span><span class="dot"></span><span class="dot"></span>
-      </div>`;
-      container.appendChild(el);
-      container.scrollTop = container.scrollHeight;
-    }
-
-    async function clearHistory() {
-      if (!currentAgent) return;
-      const agentId = currentAgent.id;
-      chatHistories[agentId] = [];
-      renderMessages(agentId);
-      try {
-        await fetch(`${BASE_URL}/api/chat/${agentId}/history`, {
-          method: 'DELETE',
-          headers: { 'X-Telegram-Init-Data': tg.initData },
-        });
-      } catch (_) {}
-    }
-
     // ── Helpers ──────────────────────────────────────────────────
-    function escHtml(text) {
-      return String(text)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;');
+    function escHtml(s) {
+      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
     }
 
     function autoResize(el) {
@@ -583,12 +1021,11 @@
     document.getElementById('msg-input').addEventListener('keydown', e => {
       if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
     });
-    document.getElementById('msg-input').addEventListener('input', function () { autoResize(this); });
+    document.getElementById('msg-input').addEventListener('input', function() { autoResize(this); });
     document.getElementById('chat-back-btn').addEventListener('click', closeChat);
     document.getElementById('news-back-btn').addEventListener('click', closeNews);
     document.getElementById('clear-btn').addEventListener('click', clearHistory);
 
-    // ── Init ─────────────────────────────────────────────────────
     loadAgents();
   </script>
 </body>
