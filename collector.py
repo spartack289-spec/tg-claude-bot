@@ -146,6 +146,30 @@ async def fetch_web_search(query: str, max_results: int = 5) -> list[dict]:
         return []
 
 
+async def _anthropic_create(**kwargs) -> anthropic.types.Message:
+    """Call Claude API with proxy, falling back to direct connection if proxy fails."""
+    if PROXY_URL:
+        proxy_http = httpx.AsyncClient(proxy=PROXY_URL)
+        try:
+            client = anthropic.AsyncAnthropic(api_key=ANTHROPIC_API_KEY, http_client=proxy_http)
+            try:
+                return await client.messages.create(**kwargs)
+            except anthropic.APIConnectionError:
+                print("[collector] Прокси недоступен, пробую прямое соединение...")
+            finally:
+                await client.close()
+        finally:
+            await proxy_http.aclose()
+
+    # Direct connection (no proxy or proxy failed)
+    async with httpx.AsyncClient() as http:
+        client = anthropic.AsyncAnthropic(api_key=ANTHROPIC_API_KEY, http_client=http)
+        try:
+            return await client.messages.create(**kwargs)
+        finally:
+            await client.close()
+
+
 async def generate_digest(items: list[dict]) -> tuple[str, list[dict]]:
     """Generate digest text and links list using Claude."""
     news_text = ""
@@ -154,11 +178,6 @@ async def generate_digest(items: list[dict]) -> tuple[str, list[dict]]:
         news_text += f"{i}. [{item.get('source', '')}] {item['title']}\n{item['summary']}\nСсылка: {item['link']}\n\n"
         if item.get("link"):
             links.append({"title": item["title"], "url": item["link"]})
-
-    client = anthropic.AsyncAnthropic(
-        api_key=ANTHROPIC_API_KEY,
-        http_client=httpx.AsyncClient(proxy=PROXY_URL) if PROXY_URL else None,
-    )
 
     prompt = f"""Тебе дан список новостей об искусственном интеллекте и технологических стартапах.
 Напиши краткий дайджест на русском языке в 3 разделах:
@@ -173,7 +192,7 @@ async def generate_digest(items: list[dict]) -> tuple[str, list[dict]]:
 Новости:
 {news_text}"""
 
-    response = await client.messages.create(
+    response = await _anthropic_create(
         model=MODEL,
         max_tokens=1500,
         messages=[{"role": "user", "content": prompt}],

@@ -32,18 +32,26 @@ MAX_HISTORY = 20
 mini_app_histories: dict[tuple, list] = {}
 
 claude: anthropic.AsyncAnthropic | None = None
+claude_direct: anthropic.AsyncAnthropic | None = None
+_proxy_http_client: httpx.AsyncClient | None = None
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global claude
+    global claude, claude_direct, _proxy_http_client
 
-    # Initialize Anthropic client inside the running event loop
-    http_client = httpx.AsyncClient(proxy=PROXY_URL) if PROXY_URL else None
-    claude = anthropic.AsyncAnthropic(
-        api_key=ANTHROPIC_API_KEY,
-        http_client=http_client,
-    )
+    # Initialize Anthropic client(s) inside the running event loop
+    if PROXY_URL:
+        _proxy_http_client = httpx.AsyncClient(proxy=PROXY_URL)
+        claude = anthropic.AsyncAnthropic(
+            api_key=ANTHROPIC_API_KEY,
+            http_client=_proxy_http_client,
+        )
+    else:
+        claude = anthropic.AsyncAnthropic(api_key=ANTHROPIC_API_KEY)
+
+    # Always keep a direct (no-proxy) client as fallback
+    claude_direct = anthropic.AsyncAnthropic(api_key=ANTHROPIC_API_KEY)
 
     # Start scheduler
     scheduler = AsyncIOScheduler(timezone="Europe/Moscow")
@@ -55,9 +63,22 @@ async def lifespan(app: FastAPI):
 
     # Cleanup
     scheduler.shutdown(wait=False)
-    if http_client:
-        await http_client.aclose()
+    if _proxy_http_client:
+        await _proxy_http_client.aclose()
     await claude.close()
+    if PROXY_URL:
+        await claude_direct.close()
+
+
+async def _call_claude(**kwargs):
+    """Call Claude API, falling back to direct connection if proxy fails."""
+    try:
+        return await claude.messages.create(**kwargs)
+    except anthropic.APIConnectionError:
+        if PROXY_URL:
+            print("[api] Прокси недоступен, пробую прямое соединение...")
+            return await claude_direct.messages.create(**kwargs)
+        raise
 
 
 app = FastAPI(lifespan=lifespan)
@@ -161,7 +182,7 @@ async def chat(req: ChatRequest):
         history[:] = history[-MAX_HISTORY:]
 
     try:
-        response = await claude.messages.create(
+        response = await _call_claude(
             model=MODEL,
             max_tokens=1024,
             system=agent["system_prompt"],
