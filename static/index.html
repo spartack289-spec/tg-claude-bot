@@ -676,6 +676,77 @@
     ::-webkit-scrollbar { width: 3px; }
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: rgba(124,111,255,0.3); border-radius: 2px; }
+
+    /* ════════════════════════════════════
+       DESKTOP / TABLET
+    ════════════════════════════════════ */
+    @media (min-width: 600px) {
+      #agents-screen {
+        padding: 28px 24px 40px;
+        max-width: 1100px;
+        margin: 0 auto;
+      }
+
+      .office-logo { width: 46px; height: 46px; font-size: 24px; }
+      .office-title { font-size: 26px; }
+      .office-subtitle { font-size: 14px; }
+
+      #agents-grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 20px;
+      }
+
+      .monitor-wrap { padding: 18px 18px 0; }
+      .screen-content { height: 72px; padding: 8px 10px; }
+      .screen-line { height: 5px; margin-bottom: 7px; }
+      .screen-cursor { width: 9px; height: 13px; }
+
+      .agent-avatar { width: 64px; height: 64px; }
+      .agent-name { font-size: 15px; }
+      .agent-desc { font-size: 12px; }
+      .agent-info { padding: 10px 14px 14px; }
+      .desk-surface { height: 8px; margin: 8px 10px 0; }
+
+      .monitor-stand { width: 14px; height: 10px; }
+      .monitor-base { width: 50px; height: 5px; }
+
+      .back-btn { width: 40px; height: 40px; font-size: 22px; }
+      .header-avatar { width: 40px; height: 40px; }
+      .header-name { font-size: 17px; }
+      .header-status { font-size: 12px; }
+      .header-action-btn { font-size: 14px; padding: 8px 16px; }
+
+      #messages { padding: 20px 24px; gap: 14px; }
+      .bubble { font-size: 15px; padding: 12px 16px; max-width: 72%; }
+      #msg-input { font-size: 15px; padding: 12px 18px; }
+      #send-btn { width: 46px; height: 46px; font-size: 18px; }
+      #input-area { padding: 12px 20px; gap: 12px; }
+
+      #news-feed { padding: 20px 24px; gap: 18px; }
+      .digest-card { padding: 20px 22px; border-radius: 20px; }
+      .digest-title { font-size: 16px; }
+      .digest-time { font-size: 12px; }
+      .digest-content { font-size: 14px; }
+      .digest-links-toggle { font-size: 13px; padding: 6px 14px; }
+      .digest-link { font-size: 13px; }
+
+      #chat-screen, #news-screen {
+        max-width: 860px;
+        margin: 0 auto;
+        border-left: 1px solid var(--border);
+        border-right: 1px solid var(--border);
+      }
+    }
+
+    @media (min-width: 900px) {
+      #agents-grid {
+        grid-template-columns: repeat(4, 1fr);
+      }
+
+      #agents-screen { max-width: 1300px; }
+
+      #chat-screen, #news-screen { max-width: 960px; }
+    }
   </style>
 </head>
 <body>
