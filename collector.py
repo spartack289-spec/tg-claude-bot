@@ -17,6 +17,7 @@ PROXY_URL = os.getenv("PROXY_URL")
 DIGESTS_FILE = "digests.json"
 MAX_DIGESTS = 10
 MODEL = "claude-sonnet-4-6"
+FETCH_TIMEOUT = 12  # seconds per RSS request
 
 MOSCOW_TZ = ZoneInfo("Europe/Moscow")
 
@@ -43,58 +44,77 @@ def save_digests(digests: list):
         json.dump(digests, f, ensure_ascii=False, indent=2)
 
 
-def fetch_rss(url: str, max_items: int = 5) -> list[dict]:
+async def fetch_rss_async(name: str, url: str, max_items: int = 5) -> list[dict]:
+    """Fetch RSS feed using httpx with timeout, then parse with feedparser."""
     try:
-        feed = feedparser.parse(url)
+        async with httpx.AsyncClient(timeout=FETCH_TIMEOUT, follow_redirects=True) as client:
+            resp = await client.get(url, headers={"User-Agent": "Mozilla/5.0 (compatible; RSS reader)"})
+            resp.raise_for_status()
+        feed = feedparser.parse(resp.text)
         items = []
         for entry in feed.entries[:max_items]:
             items.append({
-                "title": entry.get("title", ""),
-                "summary": entry.get("summary", entry.get("description", ""))[:300],
+                "title": entry.get("title", "").strip(),
+                "summary": entry.get("summary", entry.get("description", ""))[:400].strip(),
                 "link": entry.get("link", ""),
+                "source": name,
             })
+        print(f"[collector] {name}: {len(items)} статей")
         return items
-    except Exception:
+    except Exception as e:
+        print(f"[collector] {name}: ошибка — {e}")
         return []
 
 
-def fetch_arxiv(max_items: int = 5) -> list[dict]:
+async def fetch_arxiv() -> list[dict]:
     try:
-        feed = feedparser.parse(ARXIV_RSS)
+        async with httpx.AsyncClient(timeout=FETCH_TIMEOUT, follow_redirects=True) as client:
+            resp = await client.get(ARXIV_RSS)
+            resp.raise_for_status()
+        feed = feedparser.parse(resp.text)
         items = []
-        for entry in feed.entries[:max_items]:
+        for entry in feed.entries[:6]:
             items.append({
-                "title": entry.get("title", ""),
-                "summary": entry.get("summary", "")[:300],
+                "title": entry.get("title", "").strip(),
+                "summary": entry.get("summary", "")[:400].strip(),
                 "link": entry.get("link", ""),
                 "source": "arxiv",
             })
+        print(f"[collector] arxiv: {len(items)} статей")
         return items
-    except Exception:
+    except Exception as e:
+        print(f"[collector] arxiv: ошибка — {e}")
         return []
 
 
-def fetch_producthunt(max_items: int = 5) -> list[dict]:
+async def fetch_producthunt() -> list[dict]:
     try:
-        feed = feedparser.parse(PRODUCTHUNT_RSS)
+        async with httpx.AsyncClient(timeout=FETCH_TIMEOUT, follow_redirects=True) as client:
+            resp = await client.get(PRODUCTHUNT_RSS, headers={"User-Agent": "Mozilla/5.0"})
+            resp.raise_for_status()
+        feed = feedparser.parse(resp.text)
         items = []
-        for entry in feed.entries[:max_items]:
+        for entry in feed.entries[:20]:
             title = entry.get("title", "").lower()
             summary = entry.get("summary", "").lower()
-            if any(kw in title + summary for kw in ["ai", "ml", "gpt", "llm", "model", "agent", "automation"]):
+            if any(kw in title + summary for kw in ["ai", "ml", "gpt", "llm", "model", "agent", "automation", "neural"]):
                 items.append({
-                    "title": entry.get("title", ""),
-                    "summary": entry.get("summary", "")[:300],
+                    "title": entry.get("title", "").strip(),
+                    "summary": entry.get("summary", "")[:400].strip(),
                     "link": entry.get("link", ""),
                     "source": "producthunt",
                 })
-        return items[:max_items]
-    except Exception:
+        result = items[:5]
+        print(f"[collector] producthunt: {len(result)} продуктов")
+        return result
+    except Exception as e:
+        print(f"[collector] producthunt: ошибка — {e}")
         return []
 
 
 async def fetch_web_search(query: str, max_results: int = 5) -> list[dict]:
     if not TAVILY_API_KEY:
+        print("[collector] Tavily: TAVILY_API_KEY не задан, пропускаю")
         return []
     try:
         async with httpx.AsyncClient(timeout=15) as client:
@@ -108,17 +128,21 @@ async def fetch_web_search(query: str, max_results: int = 5) -> list[dict]:
                     "include_answer": False,
                 },
             )
+            res.raise_for_status()
             data = res.json()
-            return [
+            results = [
                 {
-                    "title": r.get("title", ""),
-                    "summary": r.get("content", "")[:300],
+                    "title": r.get("title", "").strip(),
+                    "summary": r.get("content", "")[:400].strip(),
                     "link": r.get("url", ""),
                     "source": "web",
                 }
                 for r in data.get("results", [])
             ]
-    except Exception:
+            print(f"[collector] Tavily «{query[:40]}»: {len(results)} результатов")
+            return results
+    except Exception as e:
+        print(f"[collector] Tavily: ошибка — {e}")
         return []
 
 
@@ -127,7 +151,7 @@ async def generate_digest(items: list[dict]) -> tuple[str, list[dict]]:
     news_text = ""
     links = []
     for i, item in enumerate(items, 1):
-        news_text += f"{i}. {item['title']}\n{item['summary']}\nСсылка: {item['link']}\n\n"
+        news_text += f"{i}. [{item.get('source', '')}] {item['title']}\n{item['summary']}\nСсылка: {item['link']}\n\n"
         if item.get("link"):
             links.append({"title": item["title"], "url": item["link"]})
 
@@ -161,13 +185,9 @@ async def generate_digest(items: list[dict]) -> tuple[str, list[dict]]:
 def get_digest_title() -> str:
     now = datetime.now(MOSCOW_TZ)
     hour = now.hour
-    date_str = now.strftime("%-d %B").replace(
-        "January", "января").replace("February", "февраля").replace(
-        "March", "марта").replace("April", "апреля").replace(
-        "May", "мая").replace("June", "июня").replace(
-        "July", "июля").replace("August", "августа").replace(
-        "September", "сентября").replace("October", "октября").replace(
-        "November", "ноября").replace("December", "декабря")
+    months = ["января","февраля","марта","апреля","мая","июня",
+              "июля","августа","сентября","октября","ноября","декабря"]
+    date_str = f"{now.day} {months[now.month - 1]}"
     if hour < 12:
         return f"Утренний дайджест · {date_str}"
     elif hour < 18:
@@ -177,46 +197,49 @@ def get_digest_title() -> str:
 
 
 async def collect_and_save():
-    """Main function: collect news, generate digest, save."""
-    print(f"[collector] Сбор новостей... {datetime.now(MOSCOW_TZ).strftime('%H:%M')}")
+    """Main function: collect news from all sources in parallel, generate digest, save."""
+    now_str = datetime.now(MOSCOW_TZ).strftime("%H:%M %d.%m")
+    print(f"[collector] Начинаю сбор новостей... {now_str}")
 
-    items = []
+    # Run all RSS fetches in parallel
+    rss_tasks = [fetch_rss_async(name, url, max_items=5) for name, url in RSS_FEEDS]
+    rss_results = await asyncio.gather(*rss_tasks)
 
-    # RSS feeds
-    for name, url in RSS_FEEDS:
-        rss_items = fetch_rss(url, max_items=4)
-        for item in rss_items:
-            item["source"] = name
-        items.extend(rss_items)
+    items: list[dict] = []
+    for batch in rss_results:
+        items.extend(batch)
 
-    # ArXiv
-    items.extend(fetch_arxiv(max_items=4))
+    # ArXiv + ProductHunt in parallel
+    arxiv_items, ph_items = await asyncio.gather(fetch_arxiv(), fetch_producthunt())
+    items.extend(arxiv_items)
+    items.extend(ph_items)
 
-    # ProductHunt
-    items.extend(fetch_producthunt(max_items=4))
-
-    # Web search
-    web_items = await fetch_web_search("latest AI news breakthroughs today", max_results=5)
-    items.extend(web_items)
-    startup_items = await fetch_web_search("AI startups funding raised 2026", max_results=3)
-    items.extend(startup_items)
+    # Web search via Tavily
+    web_tasks = [
+        fetch_web_search("AI artificial intelligence news this week", max_results=5),
+        fetch_web_search("AI startups funding investment 2025 2026", max_results=4),
+        fetch_web_search("new AI model release announcement", max_results=3),
+    ]
+    web_results = await asyncio.gather(*web_tasks)
+    for batch in web_results:
+        items.extend(batch)
 
     if not items:
-        print("[collector] Нет данных для дайджеста")
+        print("[collector] Нет данных ни из одного источника — дайджест не создан")
         return
 
-    # Remove duplicates by title
-    seen = set()
-    unique_items = []
+    # Remove duplicates by title prefix
+    seen: set[str] = set()
+    unique_items: list[dict] = []
     for item in items:
-        key = item["title"][:60]
-        if key not in seen:
+        key = item["title"][:60].lower().strip()
+        if key and key not in seen:
             seen.add(key)
             unique_items.append(item)
 
-    print(f"[collector] Собрано {len(unique_items)} уникальных новостей")
+    print(f"[collector] Итого уникальных статей: {len(unique_items)}")
 
-    content, links = await generate_digest(unique_items[:30])
+    content, links = await generate_digest(unique_items[:35])
 
     now = datetime.now(MOSCOW_TZ)
     digest = {
@@ -232,7 +255,7 @@ async def collect_and_save():
     digests = digests[:MAX_DIGESTS]
     save_digests(digests)
 
-    print(f"[collector] Дайджест сохранён: {digest['title']}")
+    print(f"[collector] Готово: «{digest['title']}» ({len(links)} ссылок)")
 
 
 if __name__ == "__main__":

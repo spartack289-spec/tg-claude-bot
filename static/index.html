@@ -1076,18 +1076,26 @@
     }
 
     async function triggerRefresh() {
-      const btn = document.getElementById('news-refresh-btn') || document.getElementById('manual-refresh-btn');
+      const headerBtn = document.getElementById('news-refresh-btn');
+      const manualBtn = document.getElementById('manual-refresh-btn');
+      const btn = headerBtn || manualBtn;
       if (btn) { btn.disabled = true; btn.textContent = '⏳'; }
+
+      const feed = document.getElementById('news-feed');
+      feed.innerHTML = `<div class="loading-wrap"><div class="loader"></div><span>Собираю новости... это займёт ~30 сек</span></div>`;
+
       try {
-        await fetch(`${BASE_URL}/api/news/refresh`, {
+        const res = await fetch(`${BASE_URL}/api/news/refresh`, {
           method: 'POST',
           headers: { 'X-Telegram-Init-Data': tg.initData },
         });
-        await loadNews();
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || `HTTP ${res.status}`);
+        renderDigests(data.digests || []);
       } catch (e) {
-        alert('Ошибка: ' + e.message);
+        feed.innerHTML = `<div class="news-empty"><div class="news-empty-icon">⚠️</div>Ошибка сбора: ${escHtml(e.message)}<br><br><button class="refresh-btn" onclick="triggerRefresh()">Попробовать снова</button></div>`;
       } finally {
-        if (btn) { btn.disabled = false; btn.textContent = '↻'; }
+        if (headerBtn) { headerBtn.disabled = false; headerBtn.textContent = '↻'; }
       }
     }
 
