@@ -131,7 +131,10 @@ async def refresh_news(request: Request):
     user = verify_init_data(init_data)
     if ALLOWED_USER_IDS and user["id"] not in ALLOWED_USER_IDS:
         raise HTTPException(status_code=403, detail="Access denied")
-    await collect_and_save()
+    try:
+        await collect_and_save()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
     return {"status": "ok", "digests": load_digests()}
 
 

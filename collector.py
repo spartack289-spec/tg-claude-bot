@@ -201,6 +201,7 @@ async def collect_and_save():
     now_str = datetime.now(MOSCOW_TZ).strftime("%H:%M %d.%m")
     print(f"[collector] Начинаю сбор новостей... {now_str}")
 
+
     # Run all RSS fetches in parallel
     rss_tasks = [fetch_rss_async(name, url, max_items=5) for name, url in RSS_FEEDS]
     rss_results = await asyncio.gather(*rss_tasks)
@@ -239,7 +240,11 @@ async def collect_and_save():
 
     print(f"[collector] Итого уникальных статей: {len(unique_items)}")
 
-    content, links = await generate_digest(unique_items[:35])
+    try:
+        content, links = await generate_digest(unique_items[:35])
+    except Exception as e:
+        print(f"[collector] Ошибка генерации дайджеста: {e}")
+        raise RuntimeError(f"Не удалось сгенерировать дайджест: {e}") from e
 
     now = datetime.now(MOSCOW_TZ)
     digest = {
