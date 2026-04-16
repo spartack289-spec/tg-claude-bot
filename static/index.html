@@ -96,6 +96,25 @@
       margin-top: 2px;
     }
 
+    .fullscreen-btn {
+      margin-left: auto;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      width: 36px; height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: var(--hint);
+      font-size: 16px;
+      transition: background 0.15s, color 0.15s;
+      flex-shrink: 0;
+    }
+
+    .fullscreen-btn:hover { background: var(--surface-hover); color: var(--text); }
+    .fullscreen-btn:active { background: var(--surface-hover); }
+
     #agents-grid {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
@@ -759,6 +778,7 @@
         <div class="office-title">AI Офис</div>
         <div class="office-subtitle">Выберите агента</div>
       </div>
+      <button class="fullscreen-btn" id="fullscreen-btn" title="Полный экран">⛶</button>
     </div>
     <div id="agents-grid">
       <div class="loading-wrap">
@@ -1096,6 +1116,32 @@
     document.getElementById('chat-back-btn').addEventListener('click', closeChat);
     document.getElementById('news-back-btn').addEventListener('click', closeNews);
     document.getElementById('clear-btn').addEventListener('click', clearHistory);
+
+    // ── Fullscreen ───────────────────────────────────────────────
+    const fsBtn = document.getElementById('fullscreen-btn');
+
+    function updateFsIcon() {
+      const active = !!(document.fullscreenElement || document.webkitFullscreenElement);
+      fsBtn.textContent = active ? '✕' : '⛶';
+      fsBtn.title = active ? 'Выйти из полного экрана' : 'Полный экран';
+    }
+
+    fsBtn.addEventListener('click', () => {
+      if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+        (document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen)
+          .call(document.documentElement);
+      } else {
+        (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+      }
+    });
+
+    document.addEventListener('fullscreenchange', updateFsIcon);
+    document.addEventListener('webkitfullscreenchange', updateFsIcon);
+
+    // Hide button if fullscreen API not supported (e.g. inside TG mobile)
+    if (!document.documentElement.requestFullscreen && !document.documentElement.webkitRequestFullscreen) {
+      fsBtn.style.display = 'none';
+    }
 
     loadAgents();
   </script>
