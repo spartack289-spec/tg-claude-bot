@@ -8,7 +8,7 @@ import anthropic
 import httpx
 from aiogram import Bot, Dispatcher, F
 from aiogram.filters import CommandStart, Command
-from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
 from aiogram.client.session.aiohttp import AiohttpSession
 
 load_dotenv()
@@ -16,6 +16,7 @@ load_dotenv()
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
 PROXY_URL = os.getenv("PROXY_URL")
+WEB_APP_URL = os.getenv("WEB_APP_URL", "")
 ALLOWED_USER_IDS = set(
     int(uid.strip()) for uid in os.getenv("ALLOWED_USER_IDS", "").split(",") if uid.strip()
 )
@@ -72,6 +73,8 @@ async def cmd_start(message: Message):
         "/start — начать заново\n"
         "/clear — очистить историю\n"
         "/model — выбрать модель\n"
+        "/app — открыть Mini App с AI агентами\n"
+        "/agents — список доступных агентов\n"
         "/myid — узнать свой Telegram ID"
     )
 
@@ -102,6 +105,36 @@ async def cmd_model(message: Message):
         InlineKeyboardButton(text="Haiku (быстрый)", callback_data="model:haiku"),
     ]])
     await message.answer(f"Текущая модель: {current}\n\nВыбери новую:", reply_markup=keyboard)
+
+
+@dp.message(Command("app"))
+async def cmd_app(message: Message):
+    if not is_allowed(message.from_user.id):
+        await message.answer("Доступ запрещён")
+        return
+    if not WEB_APP_URL:
+        await message.answer("Mini App не настроен. Установите WEB_APP_URL в .env")
+        return
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[[
+        InlineKeyboardButton(
+            text="Открыть AI Агентов 🤖",
+            web_app=WebAppInfo(url=WEB_APP_URL)
+        )
+    ]])
+    await message.answer("Нажмите кнопку, чтобы открыть Mini App с AI агентами:", reply_markup=keyboard)
+
+
+@dp.message(Command("agents"))
+async def cmd_agents(message: Message):
+    if not is_allowed(message.from_user.id):
+        await message.answer("Доступ запрещён")
+        return
+    from agents import AGENTS
+    lines = ["Доступные AI агенты:\n"]
+    for a in AGENTS:
+        lines.append(f"{a['emoji']} *{a['name']}* — {a['description']}")
+    lines.append("\nОткрыть: /app")
+    await message.answer("\n".join(lines), parse_mode="Markdown")
 
 
 @dp.callback_query(lambda c: c.data and c.data.startswith("model:"))
