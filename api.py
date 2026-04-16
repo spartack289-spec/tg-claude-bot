@@ -11,8 +11,10 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from dotenv import load_dotenv
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 from agents import AGENTS, AGENTS_BY_ID
+from collector import collect_and_save, load_digests
 
 load_dotenv()
 
@@ -34,6 +36,14 @@ app = FastAPI()
 
 # In-memory history: { (user_id, agent_id): [{role, content}, ...] }
 mini_app_histories: dict[tuple, list] = {}
+
+
+@app.on_event("startup")
+async def start_scheduler():
+    scheduler = AsyncIOScheduler(timezone="Europe/Moscow")
+    scheduler.add_job(collect_and_save, "cron", hour="8,14,20", minute=0)
+    scheduler.start()
+    print("[api] Планировщик запущен: дайджест в 8:00, 14:00, 20:00 МСК")
 
 
 def verify_init_data(init_data: str) -> dict:
@@ -82,9 +92,30 @@ async def serve_index():
 @app.get("/api/agents")
 async def get_agents():
     return [
-        {"id": a["id"], "name": a["name"], "emoji": a["emoji"], "description": a["description"]}
+        {
+            "id": a["id"],
+            "name": a["name"],
+            "emoji": a["emoji"],
+            "description": a["description"],
+            "type": a.get("type", "chat"),
+        }
         for a in AGENTS
     ]
+
+
+@app.get("/api/news")
+async def get_news():
+    return load_digests()
+
+
+@app.post("/api/news/refresh")
+async def refresh_news(request: Request):
+    init_data = request.headers.get("X-Telegram-Init-Data", "")
+    user = verify_init_data(init_data)
+    if ALLOWED_USER_IDS and user["id"] not in ALLOWED_USER_IDS:
+        raise HTTPException(status_code=403, detail="Access denied")
+    await collect_and_save()
+    return {"status": "ok", "digests": load_digests()}
 
 
 @app.post("/api/chat")
