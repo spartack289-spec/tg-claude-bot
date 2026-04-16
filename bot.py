@@ -42,7 +42,10 @@ def load_history():
     if os.path.exists(HISTORY_FILE):
         with open(HISTORY_FILE, encoding="utf-8") as f:
             data = json.load(f)
-        chat_histories = {int(k): v for k, v in data.items()}
+        chat_histories = {
+            int(k): [msg for msg in v if msg.get("content") is not None]
+            for k, v in data.items()
+        }
 
 
 def save_history():
@@ -149,6 +152,10 @@ async def handle_photo(message: Message, bot: Bot):
 async def handle_message(message: Message):
     if not is_allowed(message.from_user.id):
         await message.answer("Доступ запрещён")
+        return
+
+    if not message.text:
+        await message.answer("Я понимаю только текстовые сообщения. Для изображений отправь фото.")
         return
 
     user_id = message.from_user.id
