@@ -2,365 +2,239 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>AI Офис</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --bg: #0b0b1e;
-      --surface: rgba(255,255,255,0.06);
-      --surface-hover: rgba(255,255,255,0.12);
-      --border: rgba(255,255,255,0.10);
-      --text: #e4e4f7;
-      --hint: #7b7b9e;
-      --accent: #7c6fff;
-      --desk: #1a1a36;
-      --desk-top: #222240;
+      --blue:   #007AFF;
+      --green:  #34C759;
+      --red:    #FF3B30;
+      --orange: #FF9500;
+      --yellow: #FFD60A;
+      --purple: #AF52DE;
+      --teal:   #5AC8FA;
+      --indigo: #5856D6;
+      --pink:   #FF2D55;
+
+      --bg:       #F2F2F7;
+      --surface:  #FFFFFF;
+
+      --label:  #000000;
+      --label2: rgba(60,60,67,0.6);
+      --label3: rgba(60,60,67,0.3);
+      --label4: rgba(60,60,67,0.18);
+
+      --fill:       rgba(120,120,128,0.20);
+      --fill2:      rgba(120,120,128,0.16);
+      --fill3:      rgba(120,120,128,0.12);
+      --fill4:      rgba(120,120,128,0.08);
+
+      --sep:        rgba(60,60,67,0.29);
+      --nav-blur:   rgba(242,242,247,0.92);
+
+      --shadow:     0 2px 20px rgba(0,0,0,0.07), 0 1px 4px rgba(0,0,0,0.04);
+      --shadow-sm:  0 1px 4px rgba(0,0,0,0.08);
     }
 
     body {
       background: var(--bg);
-      color: var(--text);
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      color: var(--label);
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', Arial, sans-serif;
+      -webkit-font-smoothing: antialiased;
       min-height: 100vh;
       overflow-x: hidden;
-    }
-
-    /* ── Background grid ── */
-    body::before {
-      content: '';
-      position: fixed;
-      inset: 0;
-      background-image:
-        linear-gradient(rgba(124,111,255,0.04) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(124,111,255,0.04) 1px, transparent 1px);
-      background-size: 40px 40px;
-      pointer-events: none;
-      z-index: 0;
-    }
-
-    /* ── Ambient glows ── */
-    body::after {
-      content: '';
-      position: fixed;
-      top: -20%;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 600px;
-      height: 400px;
-      background: radial-gradient(ellipse, rgba(124,111,255,0.12) 0%, transparent 70%);
-      pointer-events: none;
-      z-index: 0;
     }
 
     /* ════════════════════════════════════
        AGENTS SCREEN
     ════════════════════════════════════ */
-    #agents-screen {
-      position: relative;
-      z-index: 1;
-      padding: 20px 16px 32px;
+    #agents-screen { padding-bottom: 40px; }
+
+    .app-header {
+      padding: 20px 20px 10px;
+      background: var(--nav-blur);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      position: sticky;
+      top: 0;
+      z-index: 10;
     }
 
-    .office-header {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 24px;
-    }
-
-    .office-logo {
-      width: 36px; height: 36px;
-      background: linear-gradient(135deg, #7c6fff, #a78bfa);
-      border-radius: 10px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 18px;
-      flex-shrink: 0;
-    }
-
-    .office-title {
-      font-size: 20px;
+    .app-title {
+      font-size: 34px;
       font-weight: 700;
-      background: linear-gradient(90deg, #e4e4f7, #a78bfa);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
+      letter-spacing: -0.5px;
+      line-height: 1.1;
     }
 
-    .office-subtitle {
-      font-size: 12px;
-      color: var(--hint);
-      margin-top: 2px;
+    .app-subtitle {
+      font-size: 15px;
+      color: var(--label2);
+      margin-top: 3px;
     }
-
-    .fullscreen-btn {
-      margin-left: auto;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      width: 36px; height: 36px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      color: var(--hint);
-      font-size: 16px;
-      transition: background 0.15s, color 0.15s;
-      flex-shrink: 0;
-    }
-
-    .fullscreen-btn:hover { background: var(--surface-hover); color: var(--text); }
-    .fullscreen-btn:active { background: var(--surface-hover); }
 
     #agents-grid {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
-      gap: 14px;
+      gap: 12px;
+      padding: 16px;
     }
 
-    /* ── Workstation card ── */
-    .workstation {
-      cursor: pointer;
-      border-radius: 18px;
+    /* ── Agent card ── */
+    .agent-card {
       background: var(--surface);
-      border: 1px solid var(--border);
-      overflow: hidden;
-      transition: transform 0.2s, background 0.2s, box-shadow 0.2s;
+      border-radius: 20px;
+      padding: 16px;
+      cursor: pointer;
+      box-shadow: var(--shadow);
+      transition: transform 0.14s ease, opacity 0.14s ease;
       -webkit-tap-highlight-color: transparent;
-      position: relative;
-    }
-
-    .workstation:active {
-      transform: scale(0.95);
-      background: var(--surface-hover);
-    }
-
-    .workstation:hover {
-      box-shadow: 0 0 24px rgba(124,111,255,0.2);
-      background: var(--surface-hover);
-    }
-
-    /* Screen glow accent (top border) */
-    .workstation::before {
-      content: '';
-      position: absolute;
-      top: 0; left: 0; right: 0;
-      height: 2px;
-      background: var(--screen-color, #7c6fff);
-      opacity: 0.8;
-    }
-
-    /* ── Monitor ── */
-    .monitor-wrap {
-      padding: 14px 14px 0;
       display: flex;
       flex-direction: column;
-      align-items: center;
-      gap: 0;
+      gap: 8px;
     }
 
-    .monitor {
-      width: 100%;
-      background: #0d0d20;
-      border: 1.5px solid rgba(255,255,255,0.12);
-      border-radius: 8px 8px 4px 4px;
-      overflow: hidden;
-      position: relative;
-    }
+    .agent-card:active { transform: scale(0.94); opacity: 0.75; }
 
-    .monitor-bar {
-      background: rgba(255,255,255,0.06);
-      padding: 5px 8px;
+    .agent-icon {
+      width: 50px; height: 50px;
+      border-radius: 14px;
       display: flex;
       align-items: center;
-      gap: 4px;
-      border-bottom: 1px solid rgba(255,255,255,0.06);
-    }
-
-    .dot-r { width: 6px; height: 6px; border-radius: 50%; background: #ff5f57; }
-    .dot-y { width: 6px; height: 6px; border-radius: 50%; background: #febc2e; }
-    .dot-g { width: 6px; height: 6px; border-radius: 50%; background: #28c840; }
-
-    .screen-content {
-      height: 52px;
-      padding: 6px 8px;
-      overflow: hidden;
-      position: relative;
-    }
-
-    .screen-line {
-      height: 4px;
-      border-radius: 2px;
-      background: var(--screen-color, #7c6fff);
-      margin-bottom: 5px;
-      opacity: 0.7;
-      transform-origin: left;
-      animation: scanline 2.5s ease-in-out infinite;
-    }
-    .screen-line:nth-child(2) { width: 65%; animation-delay: 0.3s; }
-    .screen-line:nth-child(3) { width: 80%; animation-delay: 0.6s; }
-    .screen-line:nth-child(4) { width: 50%; animation-delay: 0.9s; }
-
-    @keyframes scanline {
-      0%, 100% { opacity: 0.3; transform: scaleX(0.8); }
-      50% { opacity: 0.9; transform: scaleX(1); }
-    }
-
-    /* Blinking cursor */
-    .screen-cursor {
-      display: inline-block;
-      width: 7px; height: 10px;
-      background: var(--screen-color, #7c6fff);
-      animation: blink 1s step-end infinite;
-      vertical-align: middle;
-      border-radius: 1px;
-    }
-
-    @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
-
-    /* Screen glow */
-    .monitor::after {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: radial-gradient(ellipse at 50% 50%, var(--screen-color, #7c6fff) 0%, transparent 70%);
-      opacity: 0.08;
-      pointer-events: none;
-      animation: screen-pulse 3s ease-in-out infinite;
-    }
-
-    @keyframes screen-pulse {
-      0%, 100% { opacity: 0.05; }
-      50% { opacity: 0.15; }
-    }
-
-    /* ── Monitor stand ── */
-    .monitor-stand {
-      width: 10px;
-      height: 8px;
-      background: rgba(255,255,255,0.1);
-      margin: 0 auto;
-    }
-
-    .monitor-base {
-      width: 36px;
-      height: 4px;
-      background: rgba(255,255,255,0.08);
-      border-radius: 2px;
-      margin: 0 auto;
-    }
-
-    /* ── Avatar ── */
-    .agent-avatar-wrap {
-      display: flex;
       justify-content: center;
-      margin-top: 4px;
-      animation: float 3.5s ease-in-out infinite;
-    }
-
-    .workstation:nth-child(2) .agent-avatar-wrap { animation-delay: 0.5s; }
-    .workstation:nth-child(3) .agent-avatar-wrap { animation-delay: 1.0s; }
-    .workstation:nth-child(4) .agent-avatar-wrap { animation-delay: 1.5s; }
-    .workstation:nth-child(5) .agent-avatar-wrap { animation-delay: 0.8s; }
-    .workstation:nth-child(6) .agent-avatar-wrap { animation-delay: 1.3s; }
-
-    @keyframes float {
-      0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(-4px); }
-    }
-
-    .agent-avatar {
-      width: 48px; height: 48px;
-      border-radius: 50%;
-      overflow: hidden;
-      background: rgba(255,255,255,0.06);
-      border: 2px solid var(--screen-color, #7c6fff);
-      box-shadow: 0 0 12px var(--screen-color, #7c6fff), 0 0 0 3px rgba(124,111,255,0.1);
-      transition: box-shadow 0.2s;
+      font-size: 26px;
       flex-shrink: 0;
     }
 
-    .agent-avatar img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
-
-    /* ── Desk & label ── */
-    .desk-surface {
-      height: 6px;
-      background: linear-gradient(90deg, var(--desk), var(--desk-top), var(--desk));
-      margin: 6px 8px 0;
-      border-radius: 3px;
-    }
-
-    .agent-info {
-      padding: 8px 12px 12px;
-      text-align: center;
-    }
-
-    .agent-name {
-      font-size: 13px;
+    .agent-card-name {
+      font-size: 15px;
       font-weight: 600;
-      color: var(--text);
-      display: block;
+      color: var(--label);
+      letter-spacing: -0.2px;
     }
 
-    .agent-desc {
-      font-size: 11px;
-      color: var(--hint);
-      margin-top: 2px;
-      display: block;
-      line-height: 1.3;
+    .agent-card-desc {
+      font-size: 12px;
+      color: var(--label2);
+      line-height: 1.4;
     }
 
-    /* ── Online indicator ── */
-    .online-badge {
-      display: inline-flex;
+    .agent-online {
+      display: flex;
       align-items: center;
-      gap: 4px;
-      font-size: 10px;
-      color: #28c840;
-      margin-top: 4px;
+      gap: 5px;
+      font-size: 11px;
+      color: var(--green);
+      font-weight: 500;
     }
 
     .online-dot {
-      width: 5px; height: 5px;
+      width: 6px; height: 6px;
+      background: var(--green);
       border-radius: 50%;
-      background: #28c840;
-      animation: pulse-green 2s ease-in-out infinite;
+      animation: pulse-dot 2s ease-in-out infinite;
     }
 
-    @keyframes pulse-green {
-      0%, 100% { box-shadow: 0 0 0 0 rgba(40,200,64,0.4); }
-      50% { box-shadow: 0 0 0 4px rgba(40,200,64,0); }
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.35; }
     }
 
     /* ── Loading ── */
     .loading-wrap {
-      grid-column: 1 / -1;
+      grid-column: 1/-1;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
       padding: 60px 20px;
-      gap: 12px;
-      color: var(--hint);
-      font-size: 14px;
+      gap: 14px;
+      color: var(--label2);
+      font-size: 15px;
     }
 
-    .loader {
-      width: 32px; height: 32px;
-      border: 2px solid rgba(124,111,255,0.2);
-      border-top-color: #7c6fff;
+    .spinner {
+      width: 28px; height: 28px;
+      border: 2.5px solid var(--fill);
+      border-top-color: var(--blue);
       border-radius: 50%;
-      animation: spin 0.8s linear infinite;
+      animation: spin 0.7s linear infinite;
     }
 
     @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ════════════════════════════════════
+       SHARED NAV BAR
+    ════════════════════════════════════ */
+    .nav-bar {
+      background: var(--nav-blur);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border-bottom: 0.5px solid var(--sep);
+      padding: 10px 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .nav-back {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      color: var(--blue);
+      font-size: 17px;
+      font-weight: 400;
+      cursor: pointer;
+      background: none;
+      border: none;
+      padding: 6px 0;
+      -webkit-tap-highlight-color: transparent;
+      flex-shrink: 0;
+    }
+
+    .nav-back svg { margin-top: 1px; }
+
+    .nav-center {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-width: 0;
+    }
+
+    .nav-title {
+      font-size: 17px;
+      font-weight: 600;
+      letter-spacing: -0.2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .nav-status {
+      font-size: 11px;
+      color: var(--green);
+      font-weight: 500;
+    }
+
+    .nav-action {
+      color: var(--blue);
+      font-size: 15px;
+      font-weight: 400;
+      cursor: pointer;
+      background: none;
+      border: none;
+      padding: 6px 0;
+      -webkit-tap-highlight-color: transparent;
+      flex-shrink: 0;
+      white-space: nowrap;
+    }
 
     /* ════════════════════════════════════
        CHAT SCREEN
@@ -370,9 +244,162 @@
       flex-direction: column;
       height: 100vh;
       background: var(--bg);
-      position: relative;
-      z-index: 1;
     }
+
+    #messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .message { display: flex; }
+    .message.user      { justify-content: flex-end; }
+    .message.assistant { justify-content: flex-start; }
+
+    /* Consecutive same-sender spacing */
+    .message + .message.user      { margin-top: 2px; }
+    .message + .message.assistant { margin-top: 2px; }
+    .message.user + .message.assistant,
+    .message.assistant + .message.user { margin-top: 8px; }
+
+    .bubble {
+      max-width: 82%;
+      padding: 9px 13px;
+      border-radius: 18px;
+      font-size: 16px;
+      line-height: 1.45;
+      word-break: break-word;
+    }
+
+    .message.user .bubble {
+      background: var(--blue);
+      color: #fff;
+      border-bottom-right-radius: 5px;
+    }
+
+    .message.assistant .bubble {
+      background: var(--surface);
+      color: var(--label);
+      border-bottom-left-radius: 5px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    /* ── Markdown in bubbles ── */
+    .bubble .md-h1 {
+      font-size: 19px;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+      margin: 12px 0 4px;
+    }
+    .bubble .md-h2 {
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: -0.2px;
+      margin: 10px 0 3px;
+    }
+    .bubble .md-h3 {
+      font-size: 15px;
+      font-weight: 600;
+      margin: 8px 0 2px;
+    }
+    .bubble .md-h1:first-child,
+    .bubble .md-h2:first-child,
+    .bubble .md-h3:first-child { margin-top: 0; }
+
+    .bubble .md-p { margin: 3px 0; }
+    .bubble .md-p:first-child { margin-top: 0; }
+    .bubble .md-p:last-child  { margin-bottom: 0; }
+
+    .bubble .md-ul {
+      padding-left: 16px;
+      margin: 4px 0;
+    }
+    .bubble .md-li { margin: 2px 0; }
+
+    .bubble .md-code {
+      font-family: 'SF Mono', 'Fira Code', 'Menlo', monospace;
+      font-size: 13px;
+      background: rgba(0,0,0,0.07);
+      padding: 1px 5px;
+      border-radius: 4px;
+    }
+
+    .message.user .bubble .md-code {
+      background: rgba(255,255,255,0.22);
+    }
+
+    /* Typing */
+    .typing-dots {
+      display: flex;
+      gap: 5px;
+      align-items: center;
+      padding: 5px 2px;
+    }
+
+    .tdot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--label3);
+      animation: tdot 1.4s ease-in-out infinite;
+    }
+    .tdot:nth-child(2) { animation-delay: 0.18s; }
+    .tdot:nth-child(3) { animation-delay: 0.36s; }
+
+    @keyframes tdot {
+      0%, 60%, 100% { transform: scale(0.65); opacity: 0.25; }
+      30%           { transform: scale(1);    opacity: 1; }
+    }
+
+    /* Input area */
+    #input-area {
+      display: flex;
+      align-items: flex-end;
+      gap: 8px;
+      padding: 8px 14px 10px;
+      background: var(--nav-blur);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border-top: 0.5px solid var(--sep);
+    }
+
+    #msg-input {
+      flex: 1;
+      background: var(--surface);
+      color: var(--label);
+      border: 1px solid var(--sep);
+      outline: none;
+      border-radius: 20px;
+      padding: 9px 14px;
+      font-size: 16px;
+      font-family: inherit;
+      resize: none;
+      max-height: 120px;
+      line-height: 1.4;
+      transition: border-color 0.2s;
+    }
+
+    #msg-input:focus      { border-color: var(--blue); }
+    #msg-input::placeholder { color: var(--label3); }
+
+    #send-btn {
+      width: 34px; height: 34px;
+      border-radius: 50%;
+      background: var(--blue);
+      color: #fff;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: opacity 0.15s, transform 0.1s;
+    }
+
+    #send-btn:disabled { opacity: 0.3; cursor: default; }
+    #send-btn:active   { transform: scale(0.88); }
 
     /* ════════════════════════════════════
        NEWS SCREEN
@@ -382,448 +409,321 @@
       flex-direction: column;
       height: 100vh;
       background: var(--bg);
-      position: relative;
-      z-index: 1;
     }
 
-    /* ── Shared header ── */
-    .screen-header {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 12px 16px;
-      background: rgba(11,11,30,0.95);
-      backdrop-filter: blur(12px);
-      border-bottom: 1px solid var(--border);
-      position: sticky;
-      top: 0;
-      z-index: 10;
-    }
-
-    .back-btn {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      width: 34px; height: 34px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      color: var(--accent);
-      font-size: 20px;
-      line-height: 1;
-      transition: background 0.15s;
-      flex-shrink: 0;
-    }
-
-    .back-btn:active { background: var(--surface-hover); }
-
-    .header-agent-info {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      flex: 1;
-      min-width: 0;
-    }
-
-    .header-avatar {
-      width: 34px; height: 34px;
-      border-radius: 50%;
-      overflow: hidden;
-      flex-shrink: 0;
-      border: 1.5px solid var(--accent);
-    }
-
-    .header-avatar img { width: 100%; height: 100%; object-fit: cover; }
-
-    .header-name {
-      font-size: 15px;
-      font-weight: 600;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .header-status {
-      font-size: 11px;
-      color: #28c840;
-      display: flex;
-      align-items: center;
-      gap: 4px;
-    }
-
-    .header-action-btn {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 6px 12px;
-      color: var(--hint);
-      font-size: 12px;
-      cursor: pointer;
-      white-space: nowrap;
-      transition: background 0.15s;
-    }
-
-    .header-action-btn:active { background: var(--surface-hover); }
-
-    /* ── Chat messages ── */
-    #messages {
-      flex: 1;
-      overflow-y: auto;
-      padding: 16px;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-
-    .message { display: flex; }
-    .message.user { justify-content: flex-end; }
-    .message.assistant { justify-content: flex-start; }
-
-    .bubble {
-      max-width: 82%;
-      padding: 10px 14px;
-      border-radius: 18px;
-      font-size: 14px;
-      line-height: 1.55;
-      word-break: break-word;
-      white-space: pre-wrap;
-    }
-
-    .message.user .bubble {
-      background: linear-gradient(135deg, #7c6fff, #a78bfa);
-      color: #fff;
-      border-bottom-right-radius: 4px;
-    }
-
-    .message.assistant .bubble {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      color: var(--text);
-      border-bottom-left-radius: 4px;
-    }
-
-    .typing-dots {
-      display: flex;
-      gap: 4px;
-      align-items: center;
-      padding: 14px 16px;
-    }
-
-    .tdot {
-      width: 7px; height: 7px;
-      border-radius: 50%;
-      background: var(--hint);
-      animation: bounce-dot 1.2s infinite;
-    }
-    .tdot:nth-child(2) { animation-delay: 0.2s; }
-    .tdot:nth-child(3) { animation-delay: 0.4s; }
-
-    @keyframes bounce-dot {
-      0%, 80%, 100% { transform: scale(0.7); opacity: 0.4; }
-      40% { transform: scale(1); opacity: 1; }
-    }
-
-    /* ── Input area ── */
-    #input-area {
-      display: flex;
-      align-items: flex-end;
-      gap: 10px;
-      padding: 10px 14px;
-      background: rgba(11,11,30,0.95);
-      backdrop-filter: blur(12px);
-      border-top: 1px solid var(--border);
-    }
-
-    #msg-input {
-      flex: 1;
-      background: var(--surface);
-      color: var(--text);
-      border: 1px solid var(--border);
-      outline: none;
-      border-radius: 16px;
-      padding: 10px 16px;
-      font-size: 14px;
-      font-family: inherit;
-      resize: none;
-      max-height: 120px;
-      line-height: 1.4;
-      transition: border-color 0.2s;
-    }
-
-    #msg-input:focus { border-color: var(--accent); }
-    #msg-input::placeholder { color: var(--hint); }
-
-    #send-btn {
-      width: 40px; height: 40px;
-      border-radius: 50%;
-      background: linear-gradient(135deg, #7c6fff, #a78bfa);
-      color: #fff;
-      border: none;
-      cursor: pointer;
-      font-size: 16px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-      transition: opacity 0.15s, transform 0.1s;
-      box-shadow: 0 4px 12px rgba(124,111,255,0.4);
-    }
-
-    #send-btn:disabled { opacity: 0.3; cursor: default; transform: none; }
-    #send-btn:active { transform: scale(0.93); }
-
-    /* ════════════════════════════════════
-       NEWS FEED
-    ════════════════════════════════════ */
     #news-feed {
       flex: 1;
       overflow-y: auto;
-      padding: 16px;
+      padding: 14px 14px 32px;
       display: flex;
       flex-direction: column;
       gap: 14px;
     }
 
+    /* Digest card */
     .digest-card {
       background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 16px;
-      position: relative;
+      border-radius: 20px;
       overflow: hidden;
+      box-shadow: var(--shadow);
     }
 
-    .digest-card::before {
-      content: '';
-      position: absolute;
-      top: 0; left: 0; right: 0;
-      height: 2px;
-      background: linear-gradient(90deg, #00b4ff, #7c6fff);
+    .digest-header {
+      padding: 16px 16px 12px;
+      border-bottom: 0.5px solid var(--sep);
     }
 
-    .digest-title {
-      font-size: 14px;
-      font-weight: 700;
-      color: var(--text);
-    }
-
-    .digest-time {
-      font-size: 11px;
-      color: var(--hint);
-      margin-top: 3px;
-      margin-bottom: 12px;
-    }
-
-    .digest-content {
-      font-size: 13px;
-      line-height: 1.65;
-      color: #c4c4e0;
-      white-space: pre-wrap;
-      word-break: break-word;
-    }
-
-    .digest-links-toggle {
-      margin-top: 12px;
+    .digest-badge {
       display: inline-flex;
       align-items: center;
       gap: 5px;
-      background: rgba(0,180,255,0.08);
-      border: 1px solid rgba(0,180,255,0.2);
-      border-radius: 8px;
-      padding: 5px 12px;
-      color: #00b4ff;
-      font-size: 12px;
+      background: rgba(0,122,255,0.10);
+      border-radius: 6px;
+      padding: 3px 8px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--blue);
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      margin-bottom: 8px;
+    }
+
+    .digest-title {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+      color: var(--label);
+      line-height: 1.25;
+    }
+
+    .digest-time {
+      font-size: 13px;
+      color: var(--label2);
+      margin-top: 4px;
+    }
+
+    .digest-body {
+      padding: 14px 16px 0;
+    }
+
+    /* Markdown in digest */
+    .digest-content { font-size: 15px; line-height: 1.65; color: var(--label); }
+    .digest-content .md-h2 {
+      font-size: 16px; font-weight: 700;
+      letter-spacing: -0.2px;
+      margin: 14px 0 5px;
+      color: var(--label);
+    }
+    .digest-content .md-h2:first-child { margin-top: 0; }
+    .digest-content .md-h3 {
+      font-size: 14px; font-weight: 600;
+      margin: 10px 0 4px;
+    }
+    .digest-content .md-p { margin: 4px 0; }
+    .digest-content .md-ul { padding-left: 18px; margin: 5px 0; }
+    .digest-content .md-li { margin: 3px 0; }
+
+    /* Truncate/expand */
+    .digest-content.truncated {
+      display: -webkit-box;
+      -webkit-line-clamp: 6;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .digest-expand-btn {
+      display: block;
+      width: 100%;
+      padding: 11px 16px;
+      background: none;
+      border: none;
+      border-top: 0.5px solid var(--sep);
+      color: var(--blue);
+      font-size: 15px;
+      font-weight: 500;
+      text-align: center;
       cursor: pointer;
-      transition: background 0.15s;
+      font-family: inherit;
+      margin-top: 12px;
+      -webkit-tap-highlight-color: transparent;
     }
 
-    .digest-links-toggle:active { background: rgba(0,180,255,0.15); }
-
-    .digest-links {
-      margin-top: 10px;
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
+    /* Sources */
+    .digest-sources {
+      padding: 0 16px 4px;
+      border-top: 0.5px solid var(--sep);
+      margin-top: 14px;
     }
 
-    .digest-links.hidden { display: none; }
-
-    .digest-link {
+    .digest-sources-label {
       font-size: 12px;
-      color: #7c6fff;
+      font-weight: 600;
+      color: var(--label3);
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      padding: 10px 0 6px;
+    }
+
+    .digest-src-link {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 0;
+      border-bottom: 0.5px solid var(--sep);
       text-decoration: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .digest-src-link:last-child { border-bottom: none; }
+
+    .digest-src-favicon {
+      width: 30px; height: 30px;
+      background: var(--fill4);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 15px;
+      flex-shrink: 0;
+    }
+
+    .digest-src-title {
+      flex: 1;
+      font-size: 14px;
+      color: var(--label);
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
-      display: block;
-      padding: 4px 8px;
-      background: rgba(124,111,255,0.06);
-      border-radius: 6px;
-      border: 1px solid rgba(124,111,255,0.15);
     }
 
-    .digest-link:active { background: rgba(124,111,255,0.15); }
-
-    .news-empty {
-      text-align: center;
-      padding: 48px 20px;
-      color: var(--hint);
-      font-size: 14px;
-      line-height: 1.7;
+    .digest-src-chevron {
+      color: var(--label4);
+      flex-shrink: 0;
     }
 
-    .news-empty-icon { font-size: 48px; margin-bottom: 12px; }
+    /* "Want more news?" prompt */
+    .digest-more-prompt {
+      margin: 14px 16px 16px;
+      background: rgba(0,122,255,0.07);
+      border-radius: 14px;
+      padding: 14px;
+    }
 
-    .refresh-btn {
-      background: linear-gradient(135deg, #7c6fff, #a78bfa);
+    .digest-more-q {
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--label);
+      margin-bottom: 10px;
+    }
+
+    .digest-more-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .btn-yes {
+      flex: 1;
+      background: var(--blue);
       color: #fff;
       border: none;
-      border-radius: 14px;
-      padding: 12px 24px;
+      border-radius: 10px;
+      padding: 10px;
       font-size: 14px;
       font-weight: 600;
       cursor: pointer;
-      margin-top: 16px;
+      font-family: inherit;
       transition: opacity 0.15s;
-      box-shadow: 0 4px 12px rgba(124,111,255,0.3);
     }
 
-    .refresh-btn:disabled { opacity: 0.4; cursor: default; }
+    .btn-no {
+      flex: 1;
+      background: var(--fill3);
+      color: var(--label);
+      border: none;
+      border-radius: 10px;
+      padding: 10px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      font-family: inherit;
+    }
 
-    /* Scrollbar */
-    ::-webkit-scrollbar { width: 3px; }
-    ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: rgba(124,111,255,0.3); border-radius: 2px; }
+    .btn-yes:disabled { opacity: 0.4; cursor: default; }
+    .btn-yes:active   { opacity: 0.7; }
+    .btn-no:active    { opacity: 0.5; }
 
-    /* ════════════════════════════════════
-       DESKTOP / TABLET
-    ════════════════════════════════════ */
+    /* Empty state */
+    .news-empty {
+      text-align: center;
+      padding: 52px 24px;
+      color: var(--label2);
+      font-size: 15px;
+      line-height: 1.7;
+    }
+
+    .news-empty-icon { font-size: 56px; margin-bottom: 14px; }
+    .news-empty-title { font-size: 20px; font-weight: 700; color: var(--label); margin-bottom: 6px; }
+
+    .btn-primary {
+      display: inline-block;
+      background: var(--blue);
+      color: #fff;
+      border: none;
+      border-radius: 14px;
+      padding: 13px 28px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 20px;
+      font-family: inherit;
+      transition: opacity 0.15s;
+    }
+
+    .btn-primary:disabled { opacity: 0.4; cursor: default; }
+    .btn-primary:active   { opacity: 0.7; }
+
+    /* Scrollbar hidden */
+    ::-webkit-scrollbar { width: 0; height: 0; }
+
+    /* ── Desktop ── */
     @media (min-width: 600px) {
-      #agents-screen {
-        padding: 28px 24px 40px;
-        max-width: 1100px;
-        margin: 0 auto;
-      }
-
-      .office-logo { width: 46px; height: 46px; font-size: 24px; }
-      .office-title { font-size: 26px; }
-      .office-subtitle { font-size: 14px; }
-
-      #agents-grid {
-        grid-template-columns: repeat(3, 1fr);
-        gap: 20px;
-      }
-
-      .monitor-wrap { padding: 18px 18px 0; }
-      .screen-content { height: 72px; padding: 8px 10px; }
-      .screen-line { height: 5px; margin-bottom: 7px; }
-      .screen-cursor { width: 9px; height: 13px; }
-
-      .agent-avatar { width: 64px; height: 64px; }
-      .agent-name { font-size: 15px; }
-      .agent-desc { font-size: 12px; }
-      .agent-info { padding: 10px 14px 14px; }
-      .desk-surface { height: 8px; margin: 8px 10px 0; }
-
-      .monitor-stand { width: 14px; height: 10px; }
-      .monitor-base { width: 50px; height: 5px; }
-
-      .back-btn { width: 40px; height: 40px; font-size: 22px; }
-      .header-avatar { width: 40px; height: 40px; }
-      .header-name { font-size: 17px; }
-      .header-status { font-size: 12px; }
-      .header-action-btn { font-size: 14px; padding: 8px 16px; }
-
-      #messages { padding: 20px 24px; gap: 14px; }
-      .bubble { font-size: 15px; padding: 12px 16px; max-width: 72%; }
-      #msg-input { font-size: 15px; padding: 12px 18px; }
-      #send-btn { width: 46px; height: 46px; font-size: 18px; }
-      #input-area { padding: 12px 20px; gap: 12px; }
-
-      #news-feed { padding: 20px 24px; gap: 18px; }
-      .digest-card { padding: 20px 22px; border-radius: 20px; }
-      .digest-title { font-size: 16px; }
-      .digest-time { font-size: 12px; }
-      .digest-content { font-size: 14px; }
-      .digest-links-toggle { font-size: 13px; padding: 6px 14px; }
-      .digest-link { font-size: 13px; }
+      #agents-grid { grid-template-columns: repeat(3, 1fr); gap: 16px; padding: 20px; }
+      .app-title   { font-size: 34px; }
+      #messages    { padding: 16px 20px; }
+      .bubble      { font-size: 15px; max-width: 72%; }
+      #input-area  { padding: 10px 20px 12px; }
+      #news-feed   { padding: 18px 20px 40px; }
 
       #chat-screen, #news-screen {
-        max-width: 860px;
+        max-width: 780px;
         margin: 0 auto;
-        border-left: 1px solid var(--border);
-        border-right: 1px solid var(--border);
+        border-left:  0.5px solid var(--sep);
+        border-right: 0.5px solid var(--sep);
       }
     }
 
     @media (min-width: 900px) {
-      #agents-grid {
-        grid-template-columns: repeat(4, 1fr);
-      }
-
-      #agents-screen { max-width: 1300px; }
-
-      #chat-screen, #news-screen { max-width: 960px; }
+      #agents-grid  { grid-template-columns: repeat(4, 1fr); }
+      #agents-screen { max-width: 1200px; margin: 0 auto; }
     }
   </style>
 </head>
 <body>
 
-  <!-- ══ Agents screen ══ -->
+  <!-- ══ Agents ══ -->
   <div id="agents-screen">
-    <div class="office-header">
-      <div class="office-logo">🤖</div>
-      <div>
-        <div class="office-title">AI Офис</div>
-        <div class="office-subtitle">Выберите агента</div>
-      </div>
-      <button class="fullscreen-btn" id="fullscreen-btn" title="Полный экран">⛶</button>
+    <div class="app-header">
+      <div class="app-title">AI Офис</div>
+      <div class="app-subtitle">Выберите агента</div>
     </div>
     <div id="agents-grid">
       <div class="loading-wrap">
-        <div class="loader"></div>
-        <span>Открываем офис...</span>
+        <div class="spinner"></div>
+        <span>Загрузка агентов…</span>
       </div>
     </div>
   </div>
 
-  <!-- ══ Chat screen ══ -->
+  <!-- ══ Chat ══ -->
   <div id="chat-screen">
-    <div class="screen-header">
-      <button class="back-btn" id="chat-back-btn">‹</button>
-      <div class="header-agent-info">
-        <div class="header-avatar" id="chat-header-avatar">
-          <img id="chat-avatar-img" src="" alt="">
-        </div>
-        <div>
-          <div class="header-name" id="agent-title"></div>
-          <div class="header-status"><span class="online-dot" style="width:5px;height:5px;border-radius:50%;background:#28c840;display:inline-block"></span> онлайн</div>
-        </div>
+    <div class="nav-bar">
+      <button class="nav-back" id="chat-back-btn">
+        <svg width="11" height="18" viewBox="0 0 11 18" fill="none">
+          <path d="M9.5 1.5L2 9l7.5 7.5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        Назад
+      </button>
+      <div class="nav-center">
+        <div class="nav-title" id="agent-title"></div>
+        <div class="nav-status">● онлайн</div>
       </div>
-      <button class="header-action-btn" id="clear-btn">Очистить</button>
+      <button class="nav-action" id="clear-btn">Очистить</button>
     </div>
     <div id="messages"></div>
     <div id="input-area">
-      <textarea id="msg-input" rows="1" placeholder="Напишите сообщение..."></textarea>
-      <button id="send-btn">➤</button>
+      <textarea id="msg-input" rows="1" placeholder="Сообщение…"></textarea>
+      <button id="send-btn">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <path d="M8 13V3M8 3L3.5 7.5M8 3L12.5 7.5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
     </div>
   </div>
 
-  <!-- ══ News screen ══ -->
+  <!-- ══ News ══ -->
   <div id="news-screen">
-    <div class="screen-header">
-      <button class="back-btn" id="news-back-btn">‹</button>
-      <div class="header-agent-info">
-        <div class="header-avatar" id="news-header-avatar">
-          <img id="news-avatar-img" src="" alt="">
-        </div>
-        <div>
-          <div class="header-name" id="news-title"></div>
-          <div class="header-status"><span class="online-dot" style="width:5px;height:5px;border-radius:50%;background:#28c840;display:inline-block"></span> обновляется 3×/день</div>
-        </div>
+    <div class="nav-bar">
+      <button class="nav-back" id="news-back-btn">
+        <svg width="11" height="18" viewBox="0 0 11 18" fill="none">
+          <path d="M9.5 1.5L2 9l7.5 7.5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        Назад
+      </button>
+      <div class="nav-center">
+        <div class="nav-title" id="news-title"></div>
+        <div class="nav-status">обновляется 3×/день</div>
       </div>
-      <button class="header-action-btn" id="news-refresh-btn">↻</button>
+      <button class="nav-action" id="news-refresh-btn">Обновить</button>
     </div>
     <div id="news-feed"></div>
   </div>
@@ -833,107 +733,118 @@
     tg.ready();
     tg.expand();
 
-    const BASE_URL = window.location.origin;
+    const BASE = window.location.origin;
     let currentAgent = null;
     const chatHistories = {};
 
-    // Screen colors per agent id
-    const SCREEN_COLORS = {
-      startup:    '#ff6b35',
-      news:       '#00b4ff',
-      code:       '#00ff88',
-      copywriter: '#ff6b9d',
-      analyst:    '#ffb300',
-      translator: '#00e5ff',
-      creative:   '#ff4081',
-      general:    '#7c6fff',
+    /* ── Agent visual config ── */
+    const AGENT_STYLE = {
+      startup:    { bg: 'rgba(255,149,0,0.13)',   color: '#FF9500',  emoji: '🚀' },
+      news:       { bg: 'rgba(0,122,255,0.10)',   color: '#007AFF',  emoji: '📰' },
+      code:       { bg: 'rgba(52,199,89,0.12)',   color: '#34C759',  emoji: '💻' },
+      copywriter: { bg: 'rgba(255,45,85,0.10)',   color: '#FF2D55',  emoji: '✍️' },
+      analyst:    { bg: 'rgba(255,214,10,0.18)',  color: '#C89500',  emoji: '📊' },
+      translator: { bg: 'rgba(90,200,250,0.15)',  color: '#0099CC',  emoji: '🌐' },
+      creative:   { bg: 'rgba(175,82,222,0.10)',  color: '#AF52DE',  emoji: '🎨' },
+      general:    { bg: 'rgba(88,86,214,0.10)',   color: '#5856D6',  emoji: '🤖' },
     };
 
-    // DiceBear robot avatars
-    function avatarUrl(agentId) {
-      const colors = {
-        startup:    'ffd8b5',
-        news:       'b6e3f4',
-        code:       'c0aede',
-        copywriter: 'ffd5dc',
-        analyst:    'ffe4b5',
-        translator: 'b5ead7',
-        creative:   'ffb7b2',
-        general:    'd4d4f5',
-      };
-      const bg = colors[agentId] || 'd4d4f5';
-      return `https://api.dicebear.com/9.x/bottts/svg?seed=${agentId}&backgroundColor=${bg}&radius=50`;
+    function agentStyle(id) {
+      return AGENT_STYLE[id] || { bg: 'rgba(88,86,214,0.10)', color: '#5856D6', emoji: '🤖' };
     }
 
-    // ── Load agents ──────────────────────────────────────────────
+    /* ── Markdown renderer ── */
+    function esc(s) {
+      return String(s)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+    }
+
+    function applyInline(s) {
+      return s
+        .replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>')
+        .replace(/\*\*(.+?)\*\*/g,     '<strong>$1</strong>')
+        .replace(/\*([^*\n]+?)\*/g,    '<em>$1</em>')
+        .replace(/`([^`]+)`/g,         '<code class="md-code">$1</code>');
+    }
+
+    function renderMarkdown(raw) {
+      const lines = esc(String(raw)).split('\n');
+      let html = '';
+      let inList = false;
+
+      for (const line of lines) {
+        if (/^### /.test(line)) {
+          if (inList) { html += '</ul>'; inList = false; }
+          html += `<div class="md-h3">${applyInline(line.slice(4))}</div>`;
+        } else if (/^## /.test(line)) {
+          if (inList) { html += '</ul>'; inList = false; }
+          html += `<div class="md-h2">${applyInline(line.slice(3))}</div>`;
+        } else if (/^# /.test(line)) {
+          if (inList) { html += '</ul>'; inList = false; }
+          html += `<div class="md-h1">${applyInline(line.slice(2))}</div>`;
+        } else if (/^[-•*] /.test(line)) {
+          if (!inList) { html += '<ul class="md-ul">'; inList = true; }
+          html += `<li class="md-li">${applyInline(line.slice(2))}</li>`;
+        } else if (line.trim() === '') {
+          if (inList) { html += '</ul>'; inList = false; }
+        } else {
+          if (inList) { html += '</ul>'; inList = false; }
+          html += `<p class="md-p">${applyInline(line)}</p>`;
+        }
+      }
+
+      if (inList) html += '</ul>';
+      return html;
+    }
+
+    /* ── Load agents ── */
     async function loadAgents() {
       try {
-        const res = await fetch(`${BASE_URL}/api/agents`);
+        const res = await fetch(`${BASE}/api/agents`);
         if (!res.ok) throw new Error('Ошибка загрузки');
         const agents = await res.json();
         const grid = document.getElementById('agents-grid');
         grid.innerHTML = '';
-        if (agents.length === 0) {
-          grid.innerHTML = `<div class="loading-wrap"><span style="font-size:32px">🏗️</span><span>Агенты скоро появятся</span></div>`;
+
+        if (!agents.length) {
+          grid.innerHTML = `<div class="loading-wrap"><span style="font-size:36px">🏗️</span><span>Агенты скоро появятся</span></div>`;
           return;
         }
+
         agents.forEach(agent => {
-          const color = SCREEN_COLORS[agent.id] || '#7c6fff';
-          const avatar = avatarUrl(agent.id);
+          const st = agentStyle(agent.id);
           const card = document.createElement('div');
-          card.className = 'workstation';
-          card.style.setProperty('--screen-color', color);
+          card.className = 'agent-card';
           card.innerHTML = `
-            <div class="monitor-wrap">
-              <div class="monitor">
-                <div class="monitor-bar">
-                  <span class="dot-r"></span>
-                  <span class="dot-y"></span>
-                  <span class="dot-g"></span>
-                </div>
-                <div class="screen-content">
-                  <div class="screen-line" style="width:90%"></div>
-                  <div class="screen-line" style="width:65%"></div>
-                  <div class="screen-line" style="width:80%"></div>
-                  <div style="margin-top:2px"><span class="screen-cursor"></span></div>
-                </div>
-              </div>
-              <div class="monitor-stand"></div>
-              <div class="monitor-base"></div>
+            <div class="agent-icon" style="background:${st.bg}">
+              ${esc(agent.emoji || st.emoji)}
             </div>
-            <div class="agent-avatar-wrap">
-              <div class="agent-avatar">
-                <img src="${avatar}" alt="${agent.name}" loading="lazy">
-              </div>
-            </div>
-            <div class="desk-surface"></div>
-            <div class="agent-info">
-              <span class="agent-name">${escHtml(agent.name)}</span>
-              <span class="agent-desc">${escHtml(agent.description)}</span>
-              <div class="online-badge">
-                <span class="online-dot"></span> онлайн
-              </div>
-            </div>
+            <div class="agent-card-name">${esc(agent.name)}</div>
+            <div class="agent-card-desc">${esc(agent.description)}</div>
+            <div class="agent-online"><span class="online-dot"></span> онлайн</div>
           `;
           card.addEventListener('click', () => {
-            if (agent.type === 'news') openNews(agent, avatar);
-            else openChat(agent, avatar);
+            if (agent.type === 'news') openNews(agent);
+            else openChat(agent);
           });
           grid.appendChild(card);
         });
       } catch (e) {
         document.getElementById('agents-grid').innerHTML =
-          `<div class="loading-wrap"><span>⚠️ ${escHtml(e.message)}</span></div>`;
+          `<div class="loading-wrap">⚠️ ${esc(e.message)}</div>`;
       }
     }
 
-    // ── Chat ─────────────────────────────────────────────────────
-    function openChat(agent, avatar) {
+    /* ════════════════════════════════════
+       CHAT
+    ════════════════════════════════════ */
+    function openChat(agent) {
       currentAgent = agent;
       document.getElementById('agents-screen').style.display = 'none';
       document.getElementById('chat-screen').style.display = 'flex';
       document.getElementById('agent-title').textContent = agent.name;
-      document.getElementById('chat-avatar-img').src = avatar || avatarUrl(agent.id);
       renderMessages(agent.id);
       tg.BackButton.show();
       tg.BackButton.onClick(closeChat);
@@ -952,17 +863,21 @@
       const input = document.getElementById('msg-input');
       const text = input.value.trim();
       if (!text || !currentAgent) return;
+
       const agentId = currentAgent.id;
       input.value = '';
       autoResize(input);
+
       if (!chatHistories[agentId]) chatHistories[agentId] = [];
       chatHistories[agentId].push({ role: 'user', content: text });
       renderMessages(agentId);
+
       const sendBtn = document.getElementById('send-btn');
       sendBtn.disabled = true;
       showTyping();
+
       try {
-        const res = await fetch(`${BASE_URL}/api/chat`, {
+        const res = await fetch(`${BASE}/api/chat`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ agent_id: agentId, message: text, telegram_init_data: tg.initData }),
@@ -981,10 +896,18 @@
     function renderMessages(agentId) {
       const container = document.getElementById('messages');
       const msgs = chatHistories[agentId] || [];
-      container.innerHTML = msgs.map(m => `
-        <div class="message ${m.role}">
-          <div class="bubble">${escHtml(m.content)}</div>
-        </div>`).join('');
+
+      // Remove typing indicator
+      document.getElementById('typing-indicator')?.remove();
+
+      container.innerHTML = msgs.map(m => {
+        if (m.role === 'user') {
+          return `<div class="message user"><div class="bubble">${esc(m.content)}</div></div>`;
+        } else {
+          return `<div class="message assistant"><div class="bubble">${renderMarkdown(m.content)}</div></div>`;
+        }
+      }).join('');
+
       container.scrollTop = container.scrollHeight;
     }
 
@@ -1003,20 +926,21 @@
       chatHistories[currentAgent.id] = [];
       renderMessages(currentAgent.id);
       try {
-        await fetch(`${BASE_URL}/api/chat/${currentAgent.id}/history`, {
+        await fetch(`${BASE}/api/chat/${currentAgent.id}/history`, {
           method: 'DELETE',
           headers: { 'X-Telegram-Init-Data': tg.initData },
         });
       } catch (_) {}
     }
 
-    // ── News ─────────────────────────────────────────────────────
-    function openNews(agent, avatar) {
+    /* ════════════════════════════════════
+       NEWS
+    ════════════════════════════════════ */
+    function openNews(agent) {
       currentAgent = agent;
       document.getElementById('agents-screen').style.display = 'none';
       document.getElementById('news-screen').style.display = 'flex';
       document.getElementById('news-title').textContent = agent.name;
-      document.getElementById('news-avatar-img').src = avatar || avatarUrl(agent.id);
       loadNews();
       tg.BackButton.show();
       tg.BackButton.onClick(closeNews);
@@ -1032,99 +956,147 @@
 
     async function loadNews() {
       const feed = document.getElementById('news-feed');
-      feed.innerHTML = `<div class="loading-wrap"><div class="loader"></div><span>Загрузка дайджестов...</span></div>`;
+      feed.innerHTML = `<div class="loading-wrap"><div class="spinner"></div><span>Загрузка дайджестов…</span></div>`;
       try {
-        const res = await fetch(`${BASE_URL}/api/news`);
+        const res = await fetch(`${BASE}/api/news`);
         const digests = await res.json();
         renderDigests(digests);
       } catch (e) {
-        feed.innerHTML = `<div class="news-empty"><div class="news-empty-icon">⚠️</div>Ошибка: ${escHtml(e.message)}</div>`;
+        feed.innerHTML = `<div class="news-empty"><div class="news-empty-icon">⚠️</div><div class="news-empty-title">Ошибка загрузки</div>${esc(e.message)}</div>`;
       }
     }
 
     function renderDigests(digests) {
       const feed = document.getElementById('news-feed');
-      if (!digests || digests.length === 0) {
+
+      if (!digests || !digests.length) {
         feed.innerHTML = `
           <div class="news-empty">
             <div class="news-empty-icon">📭</div>
-            Дайджестов пока нет.<br>
-            Первый выйдет в 8:00, 14:00 или 20:00 МСК.<br>
-            <button class="refresh-btn" id="manual-refresh-btn">⚡ Собрать сейчас</button>
+            <div class="news-empty-title">Дайджестов пока нет</div>
+            Первый выйдет в 8:00, 14:00 или 20:00 МСК.
+            <br>
+            <button class="btn-primary" id="manual-refresh-btn">⚡ Собрать сейчас</button>
           </div>`;
         document.getElementById('manual-refresh-btn')?.addEventListener('click', triggerRefresh);
         return;
       }
-      feed.innerHTML = digests.map((d, i) => `
-        <div class="digest-card">
-          <div class="digest-title">${escHtml(d.title)}</div>
-          <div class="digest-time">${formatDate(d.created_at)}</div>
-          <div class="digest-content">${escHtml(d.content)}</div>
-          ${d.links && d.links.length > 0 ? `
-            <button class="digest-links-toggle" onclick="toggleLinks(${i})">
-              🔗 Источники (${d.links.length})
-            </button>
-            <div class="digest-links hidden" id="links-${i}">
-              ${d.links.map(l => `<a class="digest-link" href="${escHtml(l.url)}" target="_blank">↗ ${escHtml(l.title)}</a>`).join('')}
-            </div>
-          ` : ''}
-        </div>`).join('');
+
+      feed.innerHTML = digests.map((d, i) => buildDigestCard(d, i)).join('');
+
+      // "Want more?" only on the newest digest (index 0)
+      const firstPrompt = feed.querySelector('.digest-more-prompt');
+      if (firstPrompt) {
+        firstPrompt.querySelector('.btn-yes')?.addEventListener('click', triggerRefresh);
+        firstPrompt.querySelector('.btn-no')?.addEventListener('click', function() {
+          firstPrompt.style.display = 'none';
+        });
+      }
+
+      // Expand buttons
+      feed.querySelectorAll('.digest-expand-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+          const content = this.closest('.digest-card').querySelector('.digest-content');
+          const isExpanded = !content.classList.contains('truncated');
+          if (isExpanded) {
+            content.classList.add('truncated');
+            this.textContent = 'Читать полностью';
+          } else {
+            content.classList.remove('truncated');
+            this.textContent = 'Свернуть';
+          }
+        });
+      });
     }
 
-    function toggleLinks(i) {
-      document.getElementById(`links-${i}`)?.classList.toggle('hidden');
+    function buildDigestCard(d, i) {
+      const isFirst = i === 0;
+      const sourcesHtml = (d.links && d.links.length)
+        ? `<div class="digest-sources">
+            <div class="digest-sources-label">Источники</div>
+            ${d.links.map(l => `
+              <a class="digest-src-link" href="${esc(l.url)}" target="_blank">
+                <div class="digest-src-favicon">🔗</div>
+                <div class="digest-src-title">${esc(l.title)}</div>
+                <svg class="digest-src-chevron" width="7" height="12" viewBox="0 0 7 12" fill="none">
+                  <path d="M1 1l5 5-5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </a>`).join('')}
+          </div>`
+        : '';
+
+      const morePromptHtml = isFirst
+        ? `<div class="digest-more-prompt">
+            <div class="digest-more-q">🔄 Хотите ещё свежих новостей?</div>
+            <div class="digest-more-actions">
+              <button class="btn-yes">Да, собрать!</button>
+              <button class="btn-no">Нет, спасибо</button>
+            </div>
+          </div>`
+        : '';
+
+      return `
+        <div class="digest-card">
+          <div class="digest-header">
+            <div class="digest-badge">📰 AI Дайджест</div>
+            <div class="digest-title">${esc(d.title)}</div>
+            <div class="digest-time">${formatDate(d.created_at)}</div>
+          </div>
+          <div class="digest-body">
+            <div class="digest-content truncated">${renderMarkdown(d.content)}</div>
+          </div>
+          <button class="digest-expand-btn">Читать полностью</button>
+          ${sourcesHtml}
+          ${morePromptHtml}
+        </div>`;
     }
 
     async function triggerRefresh() {
-      const headerBtn = document.getElementById('news-refresh-btn');
-      const manualBtn = document.getElementById('manual-refresh-btn');
-      const btn = headerBtn || manualBtn;
-      if (btn) { btn.disabled = true; btn.textContent = '⏳'; }
-
+      const headerBtn  = document.getElementById('news-refresh-btn');
       const feed = document.getElementById('news-feed');
-      feed.innerHTML = `<div class="loading-wrap"><div class="loader"></div><span>Собираю новости... это займёт ~30 сек</span></div>`;
+
+      if (headerBtn) { headerBtn.disabled = true; headerBtn.textContent = '…'; }
+
+      feed.innerHTML = `<div class="loading-wrap"><div class="spinner"></div><span>Собираю новости… ~30 сек</span></div>`;
 
       try {
-        const res = await fetch(`${BASE_URL}/api/news/refresh`, {
+        const res = await fetch(`${BASE}/api/news/refresh`, {
           method: 'POST',
           headers: { 'X-Telegram-Init-Data': tg.initData },
         });
-        let data;
         const ct = res.headers.get('content-type') || '';
-        if (ct.includes('application/json')) {
-          data = await res.json();
-        } else {
-          const text = await res.text();
-          throw new Error(`Сервер вернул ошибку (HTTP ${res.status})`);
-        }
+        if (!ct.includes('application/json')) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
         if (!res.ok) throw new Error(data.detail || `HTTP ${res.status}`);
         renderDigests(data.digests || []);
       } catch (e) {
-        feed.innerHTML = `<div class="news-empty"><div class="news-empty-icon">⚠️</div>Ошибка сбора:<br>${escHtml(e.message)}<br><br><button class="refresh-btn" onclick="triggerRefresh()">Попробовать снова</button></div>`;
+        feed.innerHTML = `
+          <div class="news-empty">
+            <div class="news-empty-icon">⚠️</div>
+            <div class="news-empty-title">Ошибка сбора</div>
+            ${esc(e.message)}<br>
+            <button class="btn-primary" onclick="triggerRefresh()">Попробовать снова</button>
+          </div>`;
       } finally {
-        if (headerBtn) { headerBtn.disabled = false; headerBtn.textContent = '↻'; }
+        if (headerBtn) { headerBtn.disabled = false; headerBtn.textContent = 'Обновить'; }
       }
     }
 
-    document.getElementById('news-refresh-btn').addEventListener('click', triggerRefresh);
-
     function formatDate(iso) {
       try {
-        return new Date(iso).toLocaleString('ru-RU', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' });
+        return new Date(iso).toLocaleString('ru-RU', {
+          day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit'
+        });
       } catch { return iso; }
     }
 
-    // ── Helpers ──────────────────────────────────────────────────
-    function escHtml(s) {
-      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-    }
-
+    /* ── Helpers ── */
     function autoResize(el) {
       el.style.height = 'auto';
       el.style.height = Math.min(el.scrollHeight, 120) + 'px';
     }
 
-    // ── Event listeners ──────────────────────────────────────────
+    /* ── Event listeners ── */
     document.getElementById('send-btn').addEventListener('click', sendMessage);
     document.getElementById('msg-input').addEventListener('keydown', e => {
       if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
@@ -1133,53 +1105,7 @@
     document.getElementById('chat-back-btn').addEventListener('click', closeChat);
     document.getElementById('news-back-btn').addEventListener('click', closeNews);
     document.getElementById('clear-btn').addEventListener('click', clearHistory);
-
-    // ── Fullscreen ───────────────────────────────────────────────
-    const fsBtn = document.getElementById('fullscreen-btn');
-
-    function isFull() {
-      return tg.isFullscreen ||
-        !!(document.fullscreenElement || document.webkitFullscreenElement);
-    }
-
-    function updateFsIcon() {
-      fsBtn.innerHTML = isFull() ? ICON_EXIT : ICON_ENTER;
-      fsBtn.title = isFull() ? 'Выйти из полного экрана' : 'Полный экран';
-    }
-
-    const ICON_ENTER = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
-      <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
-    </svg>`;
-
-    const ICON_EXIT = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/>
-      <line x1="10" y1="14" x2="3" y2="21"/><line x1="21" y1="3" x2="14" y2="10"/>
-    </svg>`;
-
-    fsBtn.innerHTML = ICON_ENTER;
-
-    fsBtn.addEventListener('click', () => {
-      if (isFull()) {
-        // exit
-        if (typeof tg.exitFullscreen === 'function') tg.exitFullscreen();
-        else if (document.exitFullscreen) document.exitFullscreen();
-        else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
-      } else {
-        // enter
-        if (typeof tg.requestFullscreen === 'function') tg.requestFullscreen();
-        else if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen();
-        else if (document.documentElement.webkitRequestFullscreen) document.documentElement.webkitRequestFullscreen();
-      }
-    });
-
-    // Telegram fullscreen event
-    tg.onEvent('fullscreenChanged', updateFsIcon);
-    tg.onEvent('fullscreenFailed', () => { fsBtn.style.display = 'none'; });
-
-    // Native fullscreen events (fallback)
-    document.addEventListener('fullscreenchange', updateFsIcon);
-    document.addEventListener('webkitfullscreenchange', updateFsIcon);
+    document.getElementById('news-refresh-btn').addEventListener('click', triggerRefresh);
 
     loadAgents();
   </script>
