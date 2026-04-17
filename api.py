@@ -6,6 +6,7 @@ import time
 from contextlib import asynccontextmanager
 from urllib.parse import parse_qs, unquote
 
+import asyncio
 import httpx
 import anthropic
 from fastapi import FastAPI, HTTPException, Request
@@ -31,27 +32,20 @@ MAX_HISTORY = 20
 # In-memory history: { (user_id, agent_id): [{role, content}, ...] }
 mini_app_histories: dict[tuple, list] = {}
 
-claude: anthropic.AsyncAnthropic | None = None
-claude_direct: anthropic.AsyncAnthropic | None = None
-_proxy_http_client: httpx.AsyncClient | None = None
+claude: anthropic.Anthropic | None = None
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global claude, claude_direct, _proxy_http_client
+    global claude
 
-    # Initialize Anthropic client(s) inside the running event loop
     if PROXY_URL:
-        _proxy_http_client = httpx.AsyncClient(proxy=PROXY_URL)
-        claude = anthropic.AsyncAnthropic(
+        claude = anthropic.Anthropic(
             api_key=ANTHROPIC_API_KEY,
-            http_client=_proxy_http_client,
+            http_client=httpx.Client(proxy=PROXY_URL)
         )
     else:
-        claude = anthropic.AsyncAnthropic(api_key=ANTHROPIC_API_KEY)
-
-    # Always keep a direct (no-proxy) client as fallback
-    claude_direct = anthropic.AsyncAnthropic(api_key=ANTHROPIC_API_KEY)
+        claude = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
 
     # Start scheduler
     scheduler = AsyncIOScheduler(timezone="Europe/Moscow")
@@ -61,24 +55,12 @@ async def lifespan(app: FastAPI):
 
     yield
 
-    # Cleanup
     scheduler.shutdown(wait=False)
-    if _proxy_http_client:
-        await _proxy_http_client.aclose()
-    await claude.close()
-    if PROXY_URL:
-        await claude_direct.close()
 
 
 async def _call_claude(**kwargs):
-    """Call Claude API, falling back to direct connection if proxy fails."""
-    try:
-        return await claude.messages.create(**kwargs)
-    except anthropic.APIConnectionError:
-        if PROXY_URL:
-            print("[api] Прокси недоступен, пробую прямое соединение...")
-            return await claude_direct.messages.create(**kwargs)
-        raise
+    """Call Claude API using sync client in thread pool."""
+    return await asyncio.to_thread(claude.messages.create, **kwargs)
 
 
 app = FastAPI(lifespan=lifespan)
