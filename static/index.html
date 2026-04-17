@@ -8,158 +8,305 @@
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+    html, body { height: 100%; }
+
     :root {
-      --blue:   #007AFF;
-      --green:  #34C759;
-      --red:    #FF3B30;
-      --orange: #FF9500;
-      --yellow: #FFD60A;
-      --purple: #AF52DE;
-      --teal:   #5AC8FA;
-      --indigo: #5856D6;
-      --pink:   #FF2D55;
-
-      --bg:       #F2F2F7;
-      --surface:  #FFFFFF;
-
-      --label:  #000000;
-      --label2: rgba(60,60,67,0.6);
-      --label3: rgba(60,60,67,0.3);
-      --label4: rgba(60,60,67,0.18);
-
-      --fill:       rgba(120,120,128,0.20);
-      --fill2:      rgba(120,120,128,0.16);
-      --fill3:      rgba(120,120,128,0.12);
-      --fill4:      rgba(120,120,128,0.08);
-
-      --sep:        rgba(60,60,67,0.29);
-      --nav-blur:   rgba(242,242,247,0.92);
-
-      --shadow:     0 2px 20px rgba(0,0,0,0.07), 0 1px 4px rgba(0,0,0,0.04);
-      --shadow-sm:  0 1px 4px rgba(0,0,0,0.08);
+      --bg:      #0d0d24;
+      --wall:    #11112e;
+      --floor:   #16163a;
+      --surface: rgba(255,255,255,0.06);
+      --surface2:rgba(255,255,255,0.10);
+      --border:  rgba(255,255,255,0.10);
+      --text:    #e8e8ff;
+      --hint:    #7878a8;
+      --blue:    #007AFF;
+      --green:   #34C759;
+      --nav-blur:rgba(13,13,36,0.92);
+      --sep:     rgba(255,255,255,0.10);
+      --shadow:  0 4px 24px rgba(0,0,0,0.4);
     }
 
     body {
       background: var(--bg);
-      color: var(--label);
+      color: var(--text);
       font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', Arial, sans-serif;
       -webkit-font-smoothing: antialiased;
-      min-height: 100vh;
       overflow-x: hidden;
     }
 
     /* ════════════════════════════════════
-       AGENTS SCREEN
+       AGENTS — GAME ROOM
     ════════════════════════════════════ */
-    #agents-screen { padding-bottom: 40px; }
-
-    .app-header {
-      padding: 20px 20px 10px;
-      background: var(--nav-blur);
-      backdrop-filter: blur(24px);
-      -webkit-backdrop-filter: blur(24px);
-      position: sticky;
-      top: 0;
-      z-index: 10;
+    #agents-screen {
+      min-height: 100vh;
+      min-height: 100dvh;
+      background:
+        linear-gradient(180deg, var(--wall) 0%, var(--wall) 42%, var(--floor) 42%, var(--floor) 100%);
+      padding-bottom: 40px;
+      position: relative;
+      overflow: hidden;
     }
 
-    .app-title {
-      font-size: 34px;
-      font-weight: 700;
+    /* Tile floor pattern */
+    #agents-screen::after {
+      content: '';
+      position: absolute;
+      left: 0; right: 0;
+      top: 42%; bottom: 0;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+      background-size: 48px 48px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Ceiling ambient light */
+    #agents-screen::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 50%; transform: translateX(-50%);
+      width: 80%; height: 200px;
+      background: radial-gradient(ellipse at 50% 0%, rgba(80,60,220,0.12) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Game header */
+    .game-header {
+      position: relative;
+      z-index: 2;
+      padding: 20px 20px 12px;
+    }
+
+    .game-title {
+      font-size: 28px;
+      font-weight: 800;
       letter-spacing: -0.5px;
-      line-height: 1.1;
+      background: linear-gradient(135deg, #e8e8ff 30%, #9090ff);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
     }
 
-    .app-subtitle {
-      font-size: 15px;
-      color: var(--label2);
-      margin-top: 3px;
+    .game-subtitle {
+      font-size: 13px;
+      color: var(--hint);
+      margin-top: 2px;
     }
 
+    /* Agents grid */
     #agents-grid {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
-      gap: 12px;
-      padding: 16px;
+      gap: 14px;
+      padding: 8px 14px;
+      position: relative;
+      z-index: 1;
     }
 
-    /* ── Agent card ── */
-    .agent-card {
-      background: var(--surface);
-      border-radius: 20px;
-      padding: 16px;
+    /* ── Workstation card ── */
+    .workstation {
       cursor: pointer;
-      box-shadow: var(--shadow);
-      transition: transform 0.14s ease, opacity 0.14s ease;
+      border-radius: 20px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      overflow: hidden;
+      transition: transform 0.15s ease, background 0.15s;
       -webkit-tap-highlight-color: transparent;
+      position: relative;
+    }
+
+    .workstation:active {
+      transform: scale(0.94);
+      background: var(--surface2);
+    }
+
+    /* Accent top line per agent */
+    .workstation::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: var(--accent-color, #7c6fff);
+    }
+
+    /* Scene: character + monitor side by side */
+    .ws-scene {
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      gap: 6px;
+      padding: 18px 10px 0;
+    }
+
+    /* ── Pixel character ── */
+    .char-wrap {
+      flex-shrink: 0;
+      animation: char-idle 3s ease-in-out infinite;
+      transform-origin: bottom center;
+    }
+
+    .workstation:nth-child(2) .char-wrap { animation-delay: 0.6s; }
+    .workstation:nth-child(3) .char-wrap { animation-delay: 1.2s; }
+    .workstation:nth-child(4) .char-wrap { animation-delay: 0.4s; }
+    .workstation:nth-child(5) .char-wrap { animation-delay: 1.8s; }
+    .workstation:nth-child(6) .char-wrap { animation-delay: 0.9s; }
+
+    @keyframes char-idle {
+      0%, 100% { transform: translateY(0); }
+      50%       { transform: translateY(-4px); }
+    }
+
+    /* ── CSS Monitor ── */
+    .monitor-wrap {
       display: flex;
       flex-direction: column;
-      gap: 8px;
-    }
-
-    .agent-card:active { transform: scale(0.94); opacity: 0.75; }
-
-    .agent-icon {
-      width: 50px; height: 50px;
-      border-radius: 14px;
-      display: flex;
       align-items: center;
-      justify-content: center;
-      font-size: 26px;
       flex-shrink: 0;
     }
 
-    .agent-card-name {
-      font-size: 15px;
-      font-weight: 600;
-      color: var(--label);
+    .monitor {
+      width: 68px;
+      background: #090916;
+      border: 2px solid rgba(255,255,255,0.14);
+      border-radius: 7px 7px 4px 4px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .monitor-bar {
+      background: rgba(255,255,255,0.06);
+      padding: 4px 6px;
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+
+    .dot { width: 5px; height: 5px; border-radius: 50%; }
+    .dot-r { background: #ff5f57; }
+    .dot-y { background: #febc2e; }
+    .dot-g { background: #28c840; }
+
+    .monitor-screen {
+      height: 44px;
+      padding: 5px 6px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .scan-line {
+      height: 3px;
+      border-radius: 2px;
+      background: var(--accent-color, #7c6fff);
+      margin-bottom: 5px;
+      animation: scan 2.5s ease-in-out infinite;
+      transform-origin: left;
+    }
+    .scan-line:nth-child(2) { width: 60%; animation-delay: 0.3s; }
+    .scan-line:nth-child(3) { width: 80%; animation-delay: 0.6s; }
+
+    @keyframes scan {
+      0%,100% { opacity: 0.3; transform: scaleX(0.7); }
+      50%      { opacity: 0.9; transform: scaleX(1); }
+    }
+
+    .monitor-cursor {
+      display: inline-block;
+      width: 6px; height: 9px;
+      background: var(--accent-color, #7c6fff);
+      animation: blink 1s step-end infinite;
+      border-radius: 1px;
+      vertical-align: middle;
+    }
+
+    @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0; } }
+
+    /* Screen glow */
+    .monitor::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse, var(--accent-color, #7c6fff) 0%, transparent 70%);
+      opacity: 0.08;
+      pointer-events: none;
+      animation: glow-pulse 3s ease-in-out infinite;
+    }
+
+    @keyframes glow-pulse {
+      0%,100% { opacity: 0.05; }
+      50%      { opacity: 0.14; }
+    }
+
+    .monitor-stand-neck { width: 8px; height: 8px; background: rgba(255,255,255,0.08); margin: 0 auto; }
+    .monitor-stand-base { width: 32px; height: 4px; background: rgba(255,255,255,0.06); border-radius: 2px; margin: 0 auto; }
+
+    /* Desk surface */
+    .ws-desk {
+      height: 7px;
+      background: linear-gradient(90deg, rgba(255,255,255,0.04), rgba(255,255,255,0.10), rgba(255,255,255,0.04));
+      border-radius: 3px;
+      margin: 6px 8px 0;
+    }
+
+    /* Agent label */
+    .ws-label {
+      padding: 8px 10px 12px;
+      text-align: center;
+    }
+
+    .ws-name {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text);
       letter-spacing: -0.2px;
     }
 
-    .agent-card-desc {
-      font-size: 12px;
-      color: var(--label2);
+    .ws-desc {
+      font-size: 11px;
+      color: var(--hint);
+      margin-top: 2px;
       line-height: 1.4;
     }
 
-    .agent-online {
-      display: flex;
+    .ws-online {
+      display: inline-flex;
       align-items: center;
-      gap: 5px;
-      font-size: 11px;
+      gap: 4px;
+      font-size: 10px;
       color: var(--green);
       font-weight: 500;
+      margin-top: 4px;
     }
 
     .online-dot {
-      width: 6px; height: 6px;
+      width: 5px; height: 5px;
       background: var(--green);
       border-radius: 50%;
-      animation: pulse-dot 2s ease-in-out infinite;
+      animation: pulse-g 2s ease-in-out infinite;
     }
 
-    @keyframes pulse-dot {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.35; }
+    @keyframes pulse-g {
+      0%,100% { box-shadow: 0 0 0 0 rgba(52,199,89,0.5); }
+      50%      { box-shadow: 0 0 0 4px rgba(52,199,89,0); }
     }
 
-    /* ── Loading ── */
+    /* Loading */
     .loading-wrap {
       grid-column: 1/-1;
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
       padding: 60px 20px;
       gap: 14px;
-      color: var(--label2);
-      font-size: 15px;
+      color: var(--hint);
+      font-size: 14px;
     }
 
     .spinner {
       width: 28px; height: 28px;
-      border: 2.5px solid var(--fill);
-      border-top-color: var(--blue);
+      border: 2.5px solid rgba(124,111,255,0.2);
+      border-top-color: #7c6fff;
       border-radius: 50%;
       animation: spin 0.7s linear infinite;
     }
@@ -178,18 +325,15 @@
       display: flex;
       align-items: center;
       gap: 10px;
-      position: sticky;
-      top: 0;
-      z-index: 10;
+      flex-shrink: 0;
     }
 
     .nav-back {
       display: flex;
       align-items: center;
-      gap: 2px;
-      color: var(--blue);
+      gap: 3px;
+      color: #7c8fff;
       font-size: 17px;
-      font-weight: 400;
       cursor: pointer;
       background: none;
       border: none;
@@ -197,8 +341,6 @@
       -webkit-tap-highlight-color: transparent;
       flex-shrink: 0;
     }
-
-    .nav-back svg { margin-top: 1px; }
 
     .nav-center {
       flex: 1;
@@ -211,7 +353,6 @@
     .nav-title {
       font-size: 17px;
       font-weight: 600;
-      letter-spacing: -0.2px;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -224,9 +365,8 @@
     }
 
     .nav-action {
-      color: var(--blue);
+      color: #7c8fff;
       font-size: 15px;
-      font-weight: 400;
       cursor: pointer;
       background: none;
       border: none;
@@ -243,25 +383,25 @@
       display: none;
       flex-direction: column;
       height: 100vh;
+      height: 100dvh;
       background: var(--bg);
     }
 
     #messages {
       flex: 1;
-      overflow-y: auto;
+      overflow-y: scroll;
+      -webkit-overflow-scrolling: touch;
       padding: 12px 14px;
       display: flex;
       flex-direction: column;
       gap: 2px;
+      overscroll-behavior: contain;
     }
 
     .message { display: flex; }
     .message.user      { justify-content: flex-end; }
     .message.assistant { justify-content: flex-start; }
 
-    /* Consecutive same-sender spacing */
-    .message + .message.user      { margin-top: 2px; }
-    .message + .message.assistant { margin-top: 2px; }
     .message.user + .message.assistant,
     .message.assistant + .message.user { margin-top: 8px; }
 
@@ -269,89 +409,52 @@
       max-width: 82%;
       padding: 9px 13px;
       border-radius: 18px;
-      font-size: 16px;
-      line-height: 1.45;
+      font-size: 15px;
+      line-height: 1.5;
       word-break: break-word;
     }
 
     .message.user .bubble {
-      background: var(--blue);
+      background: linear-gradient(135deg, #5a50e0, #7c6fff);
       color: #fff;
       border-bottom-right-radius: 5px;
     }
 
     .message.assistant .bubble {
-      background: var(--surface);
-      color: var(--label);
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text);
       border-bottom-left-radius: 5px;
-      box-shadow: var(--shadow-sm);
     }
 
-    /* ── Markdown in bubbles ── */
-    .bubble .md-h1 {
-      font-size: 19px;
-      font-weight: 700;
-      letter-spacing: -0.3px;
-      margin: 12px 0 4px;
-    }
-    .bubble .md-h2 {
-      font-size: 16px;
-      font-weight: 700;
-      letter-spacing: -0.2px;
-      margin: 10px 0 3px;
-    }
-    .bubble .md-h3 {
-      font-size: 15px;
-      font-weight: 600;
-      margin: 8px 0 2px;
-    }
+    /* Markdown */
+    .bubble .md-h1 { font-size: 18px; font-weight: 700; letter-spacing: -0.3px; margin: 12px 0 4px; display: block; }
+    .bubble .md-h2 { font-size: 15px; font-weight: 700; margin: 10px 0 3px; display: block; }
+    .bubble .md-h3 { font-size: 14px; font-weight: 600; margin: 8px 0 2px; display: block; }
     .bubble .md-h1:first-child,
     .bubble .md-h2:first-child,
     .bubble .md-h3:first-child { margin-top: 0; }
-
-    .bubble .md-p { margin: 3px 0; }
+    .bubble .md-p  { margin: 3px 0; display: block; }
     .bubble .md-p:first-child { margin-top: 0; }
     .bubble .md-p:last-child  { margin-bottom: 0; }
-
-    .bubble .md-ul {
-      padding-left: 16px;
-      margin: 4px 0;
-    }
+    .bubble .md-ul { padding-left: 16px; margin: 4px 0; }
     .bubble .md-li { margin: 2px 0; }
-
+    .bubble .md-hr { border: none; border-top: 1px solid var(--sep); margin: 8px 0; }
     .bubble .md-code {
-      font-family: 'SF Mono', 'Fira Code', 'Menlo', monospace;
-      font-size: 13px;
-      background: rgba(0,0,0,0.07);
+      font-family: 'SF Mono','Fira Code','Menlo',monospace;
+      font-size: 12px;
+      background: rgba(0,0,0,0.25);
       padding: 1px 5px;
       border-radius: 4px;
     }
-
-    .message.user .bubble .md-code {
-      background: rgba(255,255,255,0.22);
-    }
+    .message.user .bubble .md-code { background: rgba(255,255,255,0.2); }
 
     /* Typing */
-    .typing-dots {
-      display: flex;
-      gap: 5px;
-      align-items: center;
-      padding: 5px 2px;
-    }
-
-    .tdot {
-      width: 8px; height: 8px;
-      border-radius: 50%;
-      background: var(--label3);
-      animation: tdot 1.4s ease-in-out infinite;
-    }
+    .typing-dots { display: flex; gap: 5px; align-items: center; padding: 5px 2px; }
+    .tdot { width: 8px; height: 8px; border-radius: 50%; background: var(--hint); animation: tdot 1.4s ease-in-out infinite; }
     .tdot:nth-child(2) { animation-delay: 0.18s; }
     .tdot:nth-child(3) { animation-delay: 0.36s; }
-
-    @keyframes tdot {
-      0%, 60%, 100% { transform: scale(0.65); opacity: 0.25; }
-      30%           { transform: scale(1);    opacity: 1; }
-    }
+    @keyframes tdot { 0%,60%,100% { transform:scale(0.65); opacity:0.25; } 30% { transform:scale(1); opacity:1; } }
 
     /* Input area */
     #input-area {
@@ -363,12 +466,13 @@
       backdrop-filter: blur(24px);
       -webkit-backdrop-filter: blur(24px);
       border-top: 0.5px solid var(--sep);
+      flex-shrink: 0;
     }
 
     #msg-input {
       flex: 1;
-      background: var(--surface);
-      color: var(--label);
+      background: rgba(255,255,255,0.07);
+      color: var(--text);
       border: 1px solid var(--sep);
       outline: none;
       border-radius: 20px;
@@ -381,13 +485,13 @@
       transition: border-color 0.2s;
     }
 
-    #msg-input:focus      { border-color: var(--blue); }
-    #msg-input::placeholder { color: var(--label3); }
+    #msg-input:focus      { border-color: #7c6fff; }
+    #msg-input::placeholder { color: var(--hint); }
 
     #send-btn {
-      width: 34px; height: 34px;
+      width: 36px; height: 36px;
       border-radius: 50%;
-      background: var(--blue);
+      background: linear-gradient(135deg, #5a50e0, #7c6fff);
       color: #fff;
       border: none;
       cursor: pointer;
@@ -396,6 +500,7 @@
       justify-content: center;
       flex-shrink: 0;
       transition: opacity 0.15s, transform 0.1s;
+      box-shadow: 0 4px 12px rgba(124,111,255,0.4);
     }
 
     #send-btn:disabled { opacity: 0.3; cursor: default; }
@@ -408,24 +513,26 @@
       display: none;
       flex-direction: column;
       height: 100vh;
+      height: 100dvh;
       background: var(--bg);
     }
 
     #news-feed {
       flex: 1;
-      overflow-y: auto;
-      padding: 14px 14px 32px;
+      overflow-y: scroll;
+      -webkit-overflow-scrolling: touch;
+      padding: 14px 14px 40px;
       display: flex;
       flex-direction: column;
       gap: 14px;
+      overscroll-behavior: contain;
     }
 
-    /* Digest card */
     .digest-card {
-      background: var(--surface);
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--border);
       border-radius: 20px;
       overflow: hidden;
-      box-shadow: var(--shadow);
     }
 
     .digest-header {
@@ -437,53 +544,42 @@
       display: inline-flex;
       align-items: center;
       gap: 5px;
-      background: rgba(0,122,255,0.10);
+      background: rgba(0,180,255,0.12);
       border-radius: 6px;
       padding: 3px 8px;
       font-size: 11px;
       font-weight: 600;
-      color: var(--blue);
+      color: #5ac8fa;
       text-transform: uppercase;
       letter-spacing: 0.4px;
       margin-bottom: 8px;
     }
 
     .digest-title {
-      font-size: 18px;
+      font-size: 17px;
       font-weight: 700;
       letter-spacing: -0.3px;
-      color: var(--label);
-      line-height: 1.25;
+      color: var(--text);
+      line-height: 1.3;
     }
 
     .digest-time {
-      font-size: 13px;
-      color: var(--label2);
+      font-size: 12px;
+      color: var(--hint);
       margin-top: 4px;
     }
 
-    .digest-body {
-      padding: 14px 16px 0;
-    }
+    .digest-body { padding: 14px 16px 0; }
 
-    /* Markdown in digest */
-    .digest-content { font-size: 15px; line-height: 1.65; color: var(--label); }
-    .digest-content .md-h2 {
-      font-size: 16px; font-weight: 700;
-      letter-spacing: -0.2px;
-      margin: 14px 0 5px;
-      color: var(--label);
-    }
+    .digest-content { font-size: 14px; line-height: 1.65; color: #c8c8e8; }
+    .digest-content .md-h2 { font-size: 15px; font-weight: 700; letter-spacing: -0.2px; margin: 14px 0 5px; color: var(--text); display: block; }
     .digest-content .md-h2:first-child { margin-top: 0; }
-    .digest-content .md-h3 {
-      font-size: 14px; font-weight: 600;
-      margin: 10px 0 4px;
-    }
-    .digest-content .md-p { margin: 4px 0; }
+    .digest-content .md-h3 { font-size: 13px; font-weight: 600; margin: 8px 0 3px; display: block; }
+    .digest-content .md-p  { margin: 4px 0; display: block; }
     .digest-content .md-ul { padding-left: 18px; margin: 5px 0; }
     .digest-content .md-li { margin: 3px 0; }
+    .digest-content .md-hr { border: none; border-top: 1px solid var(--sep); margin: 10px 0; }
 
-    /* Truncate/expand */
     .digest-content.truncated {
       display: -webkit-box;
       -webkit-line-clamp: 6;
@@ -494,12 +590,12 @@
     .digest-expand-btn {
       display: block;
       width: 100%;
-      padding: 11px 16px;
+      padding: 11px;
       background: none;
       border: none;
       border-top: 0.5px solid var(--sep);
-      color: var(--blue);
-      font-size: 15px;
+      color: #7c8fff;
+      font-size: 14px;
       font-weight: 500;
       text-align: center;
       cursor: pointer;
@@ -512,13 +608,13 @@
     .digest-sources {
       padding: 0 16px 4px;
       border-top: 0.5px solid var(--sep);
-      margin-top: 14px;
+      margin-top: 12px;
     }
 
     .digest-sources-label {
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 600;
-      color: var(--label3);
+      color: var(--hint);
       text-transform: uppercase;
       letter-spacing: 0.6px;
       padding: 10px 0 6px;
@@ -529,126 +625,100 @@
       align-items: center;
       gap: 10px;
       padding: 9px 0;
-      border-bottom: 0.5px solid var(--sep);
+      border-bottom: 0.5px solid rgba(255,255,255,0.05);
       text-decoration: none;
       -webkit-tap-highlight-color: transparent;
     }
 
     .digest-src-link:last-child { border-bottom: none; }
 
-    .digest-src-favicon {
-      width: 30px; height: 30px;
-      background: var(--fill4);
-      border-radius: 8px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 15px;
+    .digest-src-icon {
+      width: 28px; height: 28px;
+      background: rgba(255,255,255,0.07);
+      border-radius: 7px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px;
       flex-shrink: 0;
     }
 
     .digest-src-title {
       flex: 1;
-      font-size: 14px;
-      color: var(--label);
+      font-size: 13px;
+      color: var(--text);
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
 
-    .digest-src-chevron {
-      color: var(--label4);
-      flex-shrink: 0;
-    }
+    .digest-src-chevron { color: var(--hint); flex-shrink: 0; }
 
-    /* "Want more news?" prompt */
+    /* Want more */
     .digest-more-prompt {
       margin: 14px 16px 16px;
-      background: rgba(0,122,255,0.07);
-      border-radius: 14px;
       padding: 14px;
+      background: rgba(124,111,255,0.08);
+      border: 1px solid rgba(124,111,255,0.2);
+      border-radius: 14px;
     }
 
-    .digest-more-q {
-      font-size: 15px;
-      font-weight: 500;
-      color: var(--label);
-      margin-bottom: 10px;
-    }
+    .digest-more-q { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 10px; }
 
-    .digest-more-actions {
-      display: flex;
-      gap: 8px;
-    }
+    .digest-more-actions { display: flex; gap: 8px; }
 
     .btn-yes {
       flex: 1;
-      background: var(--blue);
+      background: linear-gradient(135deg, #5a50e0, #7c6fff);
       color: #fff;
-      border: none;
-      border-radius: 10px;
-      padding: 10px;
-      font-size: 14px;
-      font-weight: 600;
-      cursor: pointer;
-      font-family: inherit;
+      border: none; border-radius: 10px;
+      padding: 10px; font-size: 13px; font-weight: 600;
+      cursor: pointer; font-family: inherit;
       transition: opacity 0.15s;
     }
 
     .btn-no {
       flex: 1;
-      background: var(--fill3);
-      color: var(--label);
-      border: none;
-      border-radius: 10px;
-      padding: 10px;
-      font-size: 14px;
-      font-weight: 500;
-      cursor: pointer;
-      font-family: inherit;
+      background: rgba(255,255,255,0.07);
+      color: var(--hint);
+      border: 1px solid var(--border); border-radius: 10px;
+      padding: 10px; font-size: 13px; font-weight: 500;
+      cursor: pointer; font-family: inherit;
     }
 
     .btn-yes:disabled { opacity: 0.4; cursor: default; }
     .btn-yes:active   { opacity: 0.7; }
     .btn-no:active    { opacity: 0.5; }
 
-    /* Empty state */
     .news-empty {
       text-align: center;
       padding: 52px 24px;
-      color: var(--label2);
-      font-size: 15px;
+      color: var(--hint);
+      font-size: 14px;
       line-height: 1.7;
     }
 
-    .news-empty-icon { font-size: 56px; margin-bottom: 14px; }
-    .news-empty-title { font-size: 20px; font-weight: 700; color: var(--label); margin-bottom: 6px; }
+    .news-empty-icon  { font-size: 52px; margin-bottom: 14px; }
+    .news-empty-title { font-size: 20px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
 
     .btn-primary {
       display: inline-block;
-      background: var(--blue);
+      background: linear-gradient(135deg, #5a50e0, #7c6fff);
       color: #fff;
-      border: none;
-      border-radius: 14px;
-      padding: 13px 28px;
-      font-size: 16px;
-      font-weight: 600;
-      cursor: pointer;
-      margin-top: 20px;
-      font-family: inherit;
+      border: none; border-radius: 14px;
+      padding: 13px 28px; font-size: 15px; font-weight: 600;
+      cursor: pointer; margin-top: 20px; font-family: inherit;
       transition: opacity 0.15s;
+      box-shadow: 0 4px 14px rgba(124,111,255,0.4);
     }
 
     .btn-primary:disabled { opacity: 0.4; cursor: default; }
     .btn-primary:active   { opacity: 0.7; }
 
-    /* Scrollbar hidden */
     ::-webkit-scrollbar { width: 0; height: 0; }
 
     /* ── Desktop ── */
     @media (min-width: 600px) {
-      #agents-grid { grid-template-columns: repeat(3, 1fr); gap: 16px; padding: 20px; }
-      .app-title   { font-size: 34px; }
+      #agents-grid { grid-template-columns: repeat(3, 1fr); gap: 18px; padding: 12px 20px; }
+      .game-title  { font-size: 34px; }
       #messages    { padding: 16px 20px; }
       .bubble      { font-size: 15px; max-width: 72%; }
       #input-area  { padding: 10px 20px 12px; }
@@ -670,21 +740,21 @@
 </head>
 <body>
 
-  <!-- ══ Agents ══ -->
+  <!-- ══ Agents screen ══ -->
   <div id="agents-screen">
-    <div class="app-header">
-      <div class="app-title">AI Офис</div>
-      <div class="app-subtitle">Выберите агента</div>
+    <div class="game-header">
+      <div class="game-title">AI Офис</div>
+      <div class="game-subtitle">Выберите агента</div>
     </div>
     <div id="agents-grid">
       <div class="loading-wrap">
         <div class="spinner"></div>
-        <span>Загрузка агентов…</span>
+        <span>Открываем офис…</span>
       </div>
     </div>
   </div>
 
-  <!-- ══ Chat ══ -->
+  <!-- ══ Chat screen ══ -->
   <div id="chat-screen">
     <div class="nav-bar">
       <button class="nav-back" id="chat-back-btn">
@@ -704,13 +774,15 @@
       <textarea id="msg-input" rows="1" placeholder="Сообщение…"></textarea>
       <button id="send-btn">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-          <path d="M8 13V3M8 3L3.5 7.5M8 3L12.5 7.5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M8 13V3M8 3L3.5 7.5M8 3L12.5 7.5"
+                stroke="white" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
       </button>
     </div>
   </div>
 
-  <!-- ══ News ══ -->
+  <!-- ══ News screen ══ -->
   <div id="news-screen">
     <div class="nav-bar">
       <button class="nav-back" id="news-back-btn">
@@ -737,53 +809,120 @@
     let currentAgent = null;
     const chatHistories = {};
 
-    /* ── Agent visual config ── */
-    const AGENT_STYLE = {
-      startup:    { bg: 'rgba(255,149,0,0.13)',   color: '#FF9500',  emoji: '🚀' },
-      news:       { bg: 'rgba(0,122,255,0.10)',   color: '#007AFF',  emoji: '📰' },
-      code:       { bg: 'rgba(52,199,89,0.12)',   color: '#34C759',  emoji: '💻' },
-      copywriter: { bg: 'rgba(255,45,85,0.10)',   color: '#FF2D55',  emoji: '✍️' },
-      analyst:    { bg: 'rgba(255,214,10,0.18)',  color: '#C89500',  emoji: '📊' },
-      translator: { bg: 'rgba(90,200,250,0.15)',  color: '#0099CC',  emoji: '🌐' },
-      creative:   { bg: 'rgba(175,82,222,0.10)',  color: '#AF52DE',  emoji: '🎨' },
-      general:    { bg: 'rgba(88,86,214,0.10)',   color: '#5856D6',  emoji: '🤖' },
+    /* ════ Agent visual config ════ */
+    const AGENT_CFG = {
+      startup:    { color: '#ff6b35', scanWidth: '90%' },
+      news:       { color: '#00b4ff', scanWidth: '85%' },
+      code:       { color: '#00ff88', scanWidth: '95%' },
+      copywriter: { color: '#ff6b9d', scanWidth: '75%' },
+      analyst:    { color: '#ffb300', scanWidth: '88%' },
+      translator: { color: '#00e5ff', scanWidth: '80%' },
+      creative:   { color: '#ff4081', scanWidth: '92%' },
+      general:    { color: '#7c6fff', scanWidth: '87%' },
     };
 
-    function agentStyle(id) {
-      return AGENT_STYLE[id] || { bg: 'rgba(88,86,214,0.10)', color: '#5856D6', emoji: '🤖' };
+    function cfg(id) { return AGENT_CFG[id] || AGENT_CFG.general; }
+
+    /* ════ Pixel-art character SVGs ════ */
+    function buildChar(shirt, pants, hair, extras = '') {
+      const skin = '#F5C5A3';
+      return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 76" width="44" height="68">
+        <ellipse cx="24" cy="74" rx="12" ry="2.5" fill="rgba(0,0,0,0.3)"/>
+        <rect x="14" y="50" width="9" height="22" fill="${pants}" rx="2"/>
+        <rect x="25" y="50" width="9" height="22" fill="${pants}" rx="2"/>
+        <rect x="11" y="62" width="12" height="9" fill="#1a1a1a" rx="3"/>
+        <rect x="25" y="62" width="12" height="9" fill="#1a1a1a" rx="3"/>
+        <rect x="11" y="28" width="26" height="24" fill="${shirt}" rx="4"/>
+        <rect x="2"  y="29" width="10" height="17" fill="${shirt}" rx="4"/>
+        <rect x="36" y="29" width="10" height="17" fill="${shirt}" rx="4"/>
+        <ellipse cx="7"  cy="47" rx="5.5" ry="4.5" fill="${skin}"/>
+        <ellipse cx="41" cy="47" rx="5.5" ry="4.5" fill="${skin}"/>
+        <rect x="19" y="22" width="10" height="8" fill="${skin}"/>
+        <rect x="11" y="4"  width="26" height="22" fill="${skin}" rx="7"/>
+        <rect x="11" y="4"  width="26" height="9"  fill="${hair}"  rx="7"/>
+        <rect x="11" y="4"  width="5"  height="16" fill="${hair}"  rx="2"/>
+        <rect x="32" y="4"  width="5"  height="12" fill="${hair}"  rx="2"/>
+        <ellipse cx="11" cy="15" rx="3.5" ry="4.5" fill="${skin}"/>
+        <ellipse cx="37" cy="15" rx="3.5" ry="4.5" fill="${skin}"/>
+        <ellipse cx="19" cy="16" rx="3.5" ry="4"   fill="white"/>
+        <ellipse cx="29" cy="16" rx="3.5" ry="4"   fill="white"/>
+        <circle  cx="19" cy="17" r="2.2"            fill="#2d1b0e"/>
+        <circle  cx="29" cy="17" r="2.2"            fill="#2d1b0e"/>
+        <circle  cx="19.8" cy="16" r="0.8"          fill="white"/>
+        <circle  cx="29.8" cy="16" r="0.8"          fill="white"/>
+        <path d="M15 12 Q19 10 23 12" stroke="${hair}" stroke-width="1.4" fill="none" stroke-linecap="round"/>
+        <path d="M25 12 Q29 10 33 12" stroke="${hair}" stroke-width="1.4" fill="none" stroke-linecap="round"/>
+        <path d="M17 21 Q24 25 31 21" stroke="#c47a5a" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+        ${extras}
+      </svg>`;
     }
 
-    /* ── Markdown renderer ── */
+    const CHAR_SVG = {
+      startup: buildChar('#1D4ED8','#1e293b','#1a0a00',
+        `<polygon points="22,28 26,28 25,50 24,52 23,50" fill="#DC2626" opacity="0.9"/>`),
+      news: buildChar('#15803D','#374151','#92400e',
+        `<circle cx="19" cy="16" r="4" fill="none" stroke="#666" stroke-width="1.2"/>
+         <circle cx="29" cy="16" r="4" fill="none" stroke="#666" stroke-width="1.2"/>
+         <line x1="23" y1="16" x2="25" y2="16" stroke="#666" stroke-width="1.2"/>
+         <line x1="11" y1="16" x2="15" y2="16" stroke="#666" stroke-width="1.2"/>
+         <line x1="33" y1="16" x2="37" y2="16" stroke="#666" stroke-width="1.2"/>`),
+      code: buildChar('#7C3AED','#1f2937','#111111',
+        `<path d="M11 14 Q24 4 37 14" stroke="#4B5563" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+         <rect x="8"  y="13" width="6" height="8" fill="#4B5563" rx="2"/>
+         <rect x="34" y="13" width="6" height="8" fill="#4B5563" rx="2"/>`),
+      copywriter: buildChar('#DB2777','#374151','#7f1d1d',
+        `<rect x="39" y="33" width="3" height="18" fill="#FCD34D" rx="1.5" transform="rotate(20 39 33)"/>
+         <polygon points="39,51 42,51 40.5,56" fill="#374151" transform="rotate(20 39 33)"/>`),
+      analyst: buildChar('#374151','#1f2937','#6b7280',
+        `<circle cx="19" cy="16" r="4" fill="none" stroke="#9CA3AF" stroke-width="1.2"/>
+         <circle cx="29" cy="16" r="4" fill="none" stroke="#9CA3AF" stroke-width="1.2"/>
+         <line x1="23" y1="16" x2="25" y2="16" stroke="#9CA3AF" stroke-width="1.2"/>
+         <line x1="11" y1="15" x2="15" y2="16" stroke="#9CA3AF" stroke-width="1.2"/>
+         <line x1="33" y1="16" x2="37" y2="15" stroke="#9CA3AF" stroke-width="1.2"/>
+         <rect x="20" y="28" width="8" height="5" fill="white" rx="1"/>`),
+      translator: buildChar('#0E7490','#1e3a5f','#1c1917',
+        `<circle cx="41" cy="41" r="5" fill="none" stroke="#67E8F9" stroke-width="1.2"/>
+         <ellipse cx="41" cy="41" rx="2.5" ry="5" fill="none" stroke="#67E8F9" stroke-width="0.8"/>
+         <line x1="36" y1="41" x2="46" y2="41" stroke="#67E8F9" stroke-width="0.8"/>`),
+      creative: buildChar('#EA580C','#292524','#7C3AED',
+        `<ellipse cx="24" cy="5" rx="14" ry="6" fill="#DC2626"/>
+         <circle  cx="32" cy="4" r="3"           fill="#EF4444"/>`),
+      general:  buildChar('#4F46E5','#1e1b4b','#6b7280'),
+    };
+
+    function getChar(id) { return CHAR_SVG[id] || CHAR_SVG.general; }
+
+    /* ════ Markdown renderer ════ */
     function esc(s) {
       return String(s)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;');
+        .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
     }
 
     function applyInline(s) {
       return s
-        .replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>')
-        .replace(/\*\*(.+?)\*\*/g,     '<strong>$1</strong>')
-        .replace(/\*([^*\n]+?)\*/g,    '<em>$1</em>')
-        .replace(/`([^`]+)`/g,         '<code class="md-code">$1</code>');
+        .replace(/\*\*\*(.+?)\*\*\*/g,'<strong><em>$1</em></strong>')
+        .replace(/\*\*(.+?)\*\*/g,    '<strong>$1</strong>')
+        .replace(/\*([^*\n]+?)\*/g,   '<em>$1</em>')
+        .replace(/`([^`]+)`/g,        '<code class="md-code">$1</code>');
     }
 
     function renderMarkdown(raw) {
       const lines = esc(String(raw)).split('\n');
-      let html = '';
-      let inList = false;
+      let html = '', inList = false;
 
       for (const line of lines) {
         if (/^### /.test(line)) {
           if (inList) { html += '</ul>'; inList = false; }
-          html += `<div class="md-h3">${applyInline(line.slice(4))}</div>`;
+          html += `<span class="md-h3">${applyInline(line.slice(4))}</span>`;
         } else if (/^## /.test(line)) {
           if (inList) { html += '</ul>'; inList = false; }
-          html += `<div class="md-h2">${applyInline(line.slice(3))}</div>`;
+          html += `<span class="md-h2">${applyInline(line.slice(3))}</span>`;
         } else if (/^# /.test(line)) {
           if (inList) { html += '</ul>'; inList = false; }
-          html += `<div class="md-h1">${applyInline(line.slice(2))}</div>`;
+          html += `<span class="md-h1">${applyInline(line.slice(2))}</span>`;
+        } else if (/^---+$/.test(line.trim())) {
+          if (inList) { html += '</ul>'; inList = false; }
+          html += `<hr class="md-hr">`;
         } else if (/^[-•*] /.test(line)) {
           if (!inList) { html += '<ul class="md-ul">'; inList = true; }
           html += `<li class="md-li">${applyInline(line.slice(2))}</li>`;
@@ -791,7 +930,7 @@
           if (inList) { html += '</ul>'; inList = false; }
         } else {
           if (inList) { html += '</ul>'; inList = false; }
-          html += `<p class="md-p">${applyInline(line)}</p>`;
+          html += `<span class="md-p">${applyInline(line)}</span>`;
         }
       }
 
@@ -799,7 +938,7 @@
       return html;
     }
 
-    /* ── Load agents ── */
+    /* ════ Load agents ════ */
     async function loadAgents() {
       try {
         const res = await fetch(`${BASE}/api/agents`);
@@ -814,16 +953,38 @@
         }
 
         agents.forEach(agent => {
-          const st = agentStyle(agent.id);
+          const c = cfg(agent.id);
+          const charSvg = getChar(agent.id);
           const card = document.createElement('div');
-          card.className = 'agent-card';
+          card.className = 'workstation';
+          card.style.setProperty('--accent-color', c.color);
           card.innerHTML = `
-            <div class="agent-icon" style="background:${st.bg}">
-              ${esc(agent.emoji || st.emoji)}
+            <div class="ws-scene">
+              <div class="char-wrap">${charSvg}</div>
+              <div class="monitor-wrap">
+                <div class="monitor">
+                  <div class="monitor-bar">
+                    <span class="dot dot-r"></span>
+                    <span class="dot dot-y"></span>
+                    <span class="dot dot-g"></span>
+                  </div>
+                  <div class="monitor-screen">
+                    <div class="scan-line" style="width:${c.scanWidth}"></div>
+                    <div class="scan-line"></div>
+                    <div class="scan-line" style="width:55%"></div>
+                    <div><span class="monitor-cursor"></span></div>
+                  </div>
+                </div>
+                <div class="monitor-stand-neck"></div>
+                <div class="monitor-stand-base"></div>
+              </div>
             </div>
-            <div class="agent-card-name">${esc(agent.name)}</div>
-            <div class="agent-card-desc">${esc(agent.description)}</div>
-            <div class="agent-online"><span class="online-dot"></span> онлайн</div>
+            <div class="ws-desk"></div>
+            <div class="ws-label">
+              <div class="ws-name">${esc(agent.name)}</div>
+              <div class="ws-desc">${esc(agent.description)}</div>
+              <div class="ws-online"><span class="online-dot"></span> онлайн</div>
+            </div>
           `;
           card.addEventListener('click', () => {
             if (agent.type === 'news') openNews(agent);
@@ -837,9 +998,7 @@
       }
     }
 
-    /* ════════════════════════════════════
-       CHAT
-    ════════════════════════════════════ */
+    /* ════ Chat ════ */
     function openChat(agent) {
       currentAgent = agent;
       document.getElementById('agents-screen').style.display = 'none';
@@ -848,7 +1007,7 @@
       renderMessages(agent.id);
       tg.BackButton.show();
       tg.BackButton.onClick(closeChat);
-      document.getElementById('msg-input').focus();
+      setTimeout(() => document.getElementById('msg-input').focus(), 100);
     }
 
     function closeChat() {
@@ -895,19 +1054,13 @@
 
     function renderMessages(agentId) {
       const container = document.getElementById('messages');
-      const msgs = chatHistories[agentId] || [];
-
-      // Remove typing indicator
       document.getElementById('typing-indicator')?.remove();
-
-      container.innerHTML = msgs.map(m => {
-        if (m.role === 'user') {
-          return `<div class="message user"><div class="bubble">${esc(m.content)}</div></div>`;
-        } else {
-          return `<div class="message assistant"><div class="bubble">${renderMarkdown(m.content)}</div></div>`;
-        }
-      }).join('');
-
+      const msgs = chatHistories[agentId] || [];
+      container.innerHTML = msgs.map(m =>
+        m.role === 'user'
+          ? `<div class="message user"><div class="bubble">${esc(m.content)}</div></div>`
+          : `<div class="message assistant"><div class="bubble">${renderMarkdown(m.content)}</div></div>`
+      ).join('');
       container.scrollTop = container.scrollHeight;
     }
 
@@ -933,9 +1086,7 @@
       } catch (_) {}
     }
 
-    /* ════════════════════════════════════
-       NEWS
-    ════════════════════════════════════ */
+    /* ════ News ════ */
     function openNews(agent) {
       currentAgent = agent;
       document.getElementById('agents-screen').style.display = 'none';
@@ -962,7 +1113,7 @@
         const digests = await res.json();
         renderDigests(digests);
       } catch (e) {
-        feed.innerHTML = `<div class="news-empty"><div class="news-empty-icon">⚠️</div><div class="news-empty-title">Ошибка загрузки</div>${esc(e.message)}</div>`;
+        feed.innerHTML = `<div class="news-empty"><div class="news-empty-icon">⚠️</div>${esc(e.message)}</div>`;
       }
     }
 
@@ -984,48 +1135,40 @@
 
       feed.innerHTML = digests.map((d, i) => buildDigestCard(d, i)).join('');
 
-      // "Want more?" only on the newest digest (index 0)
-      const firstPrompt = feed.querySelector('.digest-more-prompt');
-      if (firstPrompt) {
-        firstPrompt.querySelector('.btn-yes')?.addEventListener('click', triggerRefresh);
-        firstPrompt.querySelector('.btn-no')?.addEventListener('click', function() {
-          firstPrompt.style.display = 'none';
-        });
-      }
-
-      // Expand buttons
       feed.querySelectorAll('.digest-expand-btn').forEach(btn => {
         btn.addEventListener('click', function() {
           const content = this.closest('.digest-card').querySelector('.digest-content');
-          const isExpanded = !content.classList.contains('truncated');
-          if (isExpanded) {
-            content.classList.add('truncated');
-            this.textContent = 'Читать полностью';
-          } else {
-            content.classList.remove('truncated');
-            this.textContent = 'Свернуть';
-          }
+          const collapsed = content.classList.contains('truncated');
+          content.classList.toggle('truncated');
+          this.textContent = collapsed ? 'Свернуть ↑' : 'Читать полностью ↓';
         });
+      });
+
+      feed.querySelector('.btn-yes')?.addEventListener('click', triggerRefresh);
+      feed.querySelector('.btn-no')?.addEventListener('click', function() {
+        this.closest('.digest-more-prompt').style.display = 'none';
       });
     }
 
     function buildDigestCard(d, i) {
       const isFirst = i === 0;
+
       const sourcesHtml = (d.links && d.links.length)
         ? `<div class="digest-sources">
             <div class="digest-sources-label">Источники</div>
             ${d.links.map(l => `
               <a class="digest-src-link" href="${esc(l.url)}" target="_blank">
-                <div class="digest-src-favicon">🔗</div>
+                <div class="digest-src-icon">🔗</div>
                 <div class="digest-src-title">${esc(l.title)}</div>
                 <svg class="digest-src-chevron" width="7" height="12" viewBox="0 0 7 12" fill="none">
-                  <path d="M1 1l5 5-5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M1 1l5 5-5 5" stroke="currentColor" stroke-width="1.8"
+                        stroke-linecap="round" stroke-linejoin="round"/>
                 </svg>
               </a>`).join('')}
           </div>`
         : '';
 
-      const morePromptHtml = isFirst
+      const moreHtml = isFirst
         ? `<div class="digest-more-prompt">
             <div class="digest-more-q">🔄 Хотите ещё свежих новостей?</div>
             <div class="digest-more-actions">
@@ -1045,18 +1188,17 @@
           <div class="digest-body">
             <div class="digest-content truncated">${renderMarkdown(d.content)}</div>
           </div>
-          <button class="digest-expand-btn">Читать полностью</button>
+          <button class="digest-expand-btn">Читать полностью ↓</button>
           ${sourcesHtml}
-          ${morePromptHtml}
+          ${moreHtml}
         </div>`;
     }
 
     async function triggerRefresh() {
-      const headerBtn  = document.getElementById('news-refresh-btn');
+      const headerBtn = document.getElementById('news-refresh-btn');
       const feed = document.getElementById('news-feed');
 
       if (headerBtn) { headerBtn.disabled = true; headerBtn.textContent = '…'; }
-
       feed.innerHTML = `<div class="loading-wrap"><div class="spinner"></div><span>Собираю новости… ~30 сек</span></div>`;
 
       try {
@@ -1085,18 +1227,17 @@
     function formatDate(iso) {
       try {
         return new Date(iso).toLocaleString('ru-RU', {
-          day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit'
+          day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit',
         });
       } catch { return iso; }
     }
 
-    /* ── Helpers ── */
     function autoResize(el) {
       el.style.height = 'auto';
       el.style.height = Math.min(el.scrollHeight, 120) + 'px';
     }
 
-    /* ── Event listeners ── */
+    /* ════ Event listeners ════ */
     document.getElementById('send-btn').addEventListener('click', sendMessage);
     document.getElementById('msg-input').addEventListener('keydown', e => {
       if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
@@ -1106,6 +1247,13 @@
     document.getElementById('news-back-btn').addEventListener('click', closeNews);
     document.getElementById('clear-btn').addEventListener('click', clearHistory);
     document.getElementById('news-refresh-btn').addEventListener('click', triggerRefresh);
+
+    /* Tap on messages area → dismiss keyboard */
+    document.getElementById('messages').addEventListener('touchstart', function(e) {
+      if (e.target === this || e.target.closest('.message')) {
+        document.getElementById('msg-input').blur();
+      }
+    }, { passive: true });
 
     loadAgents();
   </script>
