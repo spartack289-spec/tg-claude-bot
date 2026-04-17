@@ -7,7 +7,6 @@ from contextlib import asynccontextmanager
 from urllib.parse import parse_qs, unquote
 
 import asyncio
-import httpx
 import anthropic
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse
@@ -81,7 +80,7 @@ def verify_init_data(init_data: str) -> dict:
         raise HTTPException(status_code=401, detail="Invalid initData signature")
 
     auth_date = int(parsed.get("auth_date", [0])[0])
-    if time.time() - auth_date > 3600:
+    if time.time() - auth_date > 86400:
         raise HTTPException(status_code=401, detail="initData expired")
 
     user_json = parsed.get("user", [None])[0]
@@ -165,10 +164,13 @@ async def chat(req: ChatRequest):
         )
         reply = response.content[0].text
     except anthropic.APIConnectionError as e:
+        history.pop()
         raise HTTPException(status_code=503, detail=f"Нет соединения с AI: {e}")
     except anthropic.APIStatusError as e:
+        history.pop()
         raise HTTPException(status_code=502, detail=f"Ошибка AI API: {e.message}")
     except Exception as e:
+        history.pop()
         raise HTTPException(status_code=500, detail=str(e))
 
     history.append({"role": "assistant", "content": reply})
