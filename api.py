@@ -96,6 +96,17 @@ class ChatRequest(BaseModel):
     telegram_init_data: str
 
 
+@app.get("/health")
+async def health():
+    key = ANTHROPIC_API_KEY
+    return {
+        "anthropic_key_set": bool(key),
+        "anthropic_key_prefix": key[:12] + "..." if len(key) > 12 else "(empty)",
+        "anthropic_key_length": len(key),
+        "bot_token_set": bool(BOT_TOKEN),
+    }
+
+
 @app.get("/")
 async def serve_index():
     return FileResponse("static/index.html")
