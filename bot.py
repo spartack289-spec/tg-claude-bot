@@ -16,7 +16,7 @@ load_dotenv()
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
 PROXY_URL = os.getenv("PROXY_URL")
-WEB_APP_URL = os.getenv("WEB_APP_URL", "")
+WEB_APP_URL = os.getenv("WEB_APP_URL", "https://web-production-3dd9c.up.railway.app")
 ALLOWED_USER_IDS = set(
     int(uid.strip()) for uid in os.getenv("ALLOWED_USER_IDS", "").split(",") if uid.strip()
 )
