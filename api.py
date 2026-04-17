@@ -22,7 +22,6 @@ load_dotenv()
 
 BOT_TOKEN = os.getenv("BOT_TOKEN", "")
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
-PROXY_URL = os.getenv("PROXY_URL")
 ALLOWED_USER_IDS = set(
     int(uid.strip()) for uid in os.getenv("ALLOWED_USER_IDS", "").split(",") if uid.strip()
 )
@@ -39,13 +38,7 @@ claude: anthropic.Anthropic | None = None
 async def lifespan(app: FastAPI):
     global claude
 
-    if PROXY_URL:
-        claude = anthropic.Anthropic(
-            api_key=ANTHROPIC_API_KEY,
-            http_client=httpx.Client(proxy=PROXY_URL)
-        )
-    else:
-        claude = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+    claude = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
 
     # Start scheduler
     scheduler = AsyncIOScheduler(timezone="Europe/Moscow")

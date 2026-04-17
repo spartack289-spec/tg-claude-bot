@@ -13,7 +13,6 @@ load_dotenv()
 
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
 TAVILY_API_KEY = os.getenv("TAVILY_API_KEY", "")
-PROXY_URL = os.getenv("PROXY_URL")
 DIGESTS_FILE = "digests.json"
 MAX_DIGESTS = 10
 MODEL = "claude-sonnet-4-6"
@@ -147,21 +146,7 @@ async def fetch_web_search(query: str, max_results: int = 5) -> list[dict]:
 
 
 async def _anthropic_create(**kwargs) -> anthropic.types.Message:
-    """Call Claude API with proxy, falling back to direct connection if proxy fails."""
-    if PROXY_URL:
-        proxy_http = httpx.AsyncClient(proxy=PROXY_URL)
-        try:
-            client = anthropic.AsyncAnthropic(api_key=ANTHROPIC_API_KEY, http_client=proxy_http)
-            try:
-                return await client.messages.create(**kwargs)
-            except anthropic.APIConnectionError:
-                print("[collector] Прокси недоступен, пробую прямое соединение...")
-            finally:
-                await client.close()
-        finally:
-            await proxy_http.aclose()
-
-    # Direct connection (no proxy or proxy failed)
+    """Call Claude API directly."""
     async with httpx.AsyncClient() as http:
         client = anthropic.AsyncAnthropic(api_key=ANTHROPIC_API_KEY, http_client=http)
         try:

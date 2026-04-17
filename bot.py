@@ -5,17 +5,14 @@ import base64
 import io
 from dotenv import load_dotenv
 import anthropic
-import httpx
 from aiogram import Bot, Dispatcher, F
 from aiogram.filters import CommandStart, Command
 from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
-from aiogram.client.session.aiohttp import AiohttpSession
 
 load_dotenv()
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
-PROXY_URL = os.getenv("PROXY_URL")
 WEB_APP_URL = os.getenv("WEB_APP_URL", "https://web-production-3dd9c.up.railway.app")
 ALLOWED_USER_IDS = set(
     int(uid.strip()) for uid in os.getenv("ALLOWED_USER_IDS", "").split(",") if uid.strip()
@@ -29,10 +26,7 @@ MODELS = {
 }
 
 dp = Dispatcher()
-claude = anthropic.Anthropic(
-    api_key=ANTHROPIC_API_KEY,
-    http_client=httpx.Client(proxy=PROXY_URL) if PROXY_URL else None
-)
+claude = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
 
 chat_histories: dict[int, list] = {}
 user_models: dict[int, str] = {}
@@ -219,8 +213,7 @@ async def handle_message(message: Message):
 
 async def main():
     load_history()
-    session = AiohttpSession(proxy=PROXY_URL) if PROXY_URL else None
-    bot = Bot(token=BOT_TOKEN, session=session)
+    bot = Bot(token=BOT_TOKEN)
 
     print("Бот запущен...")
     await dp.start_polling(bot)
